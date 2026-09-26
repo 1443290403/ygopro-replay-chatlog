@@ -1,0 +1,22 @@
+# 换行统一成 LF —— 这不只是「规范」，这个项目依赖它：
+# 一批文件要求三端逐字节相同（见 SHARING.md 第 3 节），而且测试会按行／按字节比对
+# （_test_paging.mjs 第 5 节那种多行正则、_test_import.mjs 的逐字比较）。
+# Windows 默认把检出写成 CRLF，上面那些断言会红，看起来却像代码改坏了 ——
+# 所以这里强制工作区也是 LF。
+* text=auto eol=lf
+
+# Windows 的启动器：cmd 跑 LF 的 .bat 不牢靠，保持 CRLF（它们本来就是 CRLF）
+*.bat text eol=crlf
+*.txt text eol=crlf
+
+# START.vbs 是 **UTF-16LE 带 BOM**，不是 UTF-8。
+# 千万别写成 `*.vbs text eol=crlf` —— git 的换行转换是按字节做的，它会在 UTF-16 的
+# 0x0A 前面插一个 0x0D，把「0D 00 0A 00」变成「0D 0A 00」，**整个文件错位、解不出来**
+# （实测：clone 下来的 START.vbs 用 utf-16 解码直接抛 illegal encoding，而文件大小
+# 比原文件多出正好每条换行一个字节）。二进制标记让 git 一个字节都不碰。
+*.vbs binary
+
+# 二进制
+*.png binary
+*.jar binary
+*.cdb binary

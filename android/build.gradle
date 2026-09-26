@@ -1,0 +1,67 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+//
+// ⚠️ 这个文件**不是** `npx cap sync` 的生成物，改它不会被覆盖。
+//    （生成物只有 capacitor.settings.gradle / app/capacitor.build.gradle，那两个别碰。）
+
+// ---------------------------------------------------------------------------
+// 仓库镜像：阿里云优先，官方殿后。
+//
+// 本机实测 maven.google.com **25 秒超时**（dl.google.com 和 services.gradle.org
+// 反而是通的，所以「网络没问题」这个直觉在这里是错的）。不换镜像的话 Gradle 会
+// 每个依赖卡 25 秒然后报一个指向别处的错，表现是「构建一动不动」。
+//
+// 阿里云放**前面**而不是替换掉 google()/mavenCentral()：镜像命中就不会走到
+// 官方源，镜像万一漏了什么还有官方源兜底 —— 顺序反了才会每次都先等 25 秒。
+// ---------------------------------------------------------------------------
+buildscript {
+    repositories {
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://maven.aliyun.com/repository/central' }
+        maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.13.0'
+        classpath 'com.google.gms:google-services:4.4.4'
+
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+}
+
+apply from: "variables.gradle"
+
+allprojects {
+    repositories {
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://maven.aliyun.com/repository/central' }
+        maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
+        google()
+        mavenCentral()
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 钉死 NDK 版本。
+//
+// @capawesome/capacitor-nodejs 的 android/build.gradle 里有
+// `externalNativeBuild { cmake { ... } }` 去编 native-lib.cpp 链接 libnode.so，
+// 但它**没有写 ndkVersion** —— 那就由 AGP 决定，而 AGP 8.13 的默认是 NDK 27.0.x，
+// 我们装的是 27.1.12297006，对不上就直接构建失败（报错还会说是 CMake 的问题）。
+//
+// 在这个文件里统一钉，而不是去改 node_modules 里那个 build.gradle ——
+// 那样 npm install 一次就没了，而且属于改依赖。cap sync 也不会覆盖这里。
+// ---------------------------------------------------------------------------
+subprojects { subproject ->
+    afterEvaluate {
+        def androidExt = subproject.extensions.findByName('android')
+        if (androidExt != null) {
+            androidExt.ndkVersion = '27.1.12297006'
+        }
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}

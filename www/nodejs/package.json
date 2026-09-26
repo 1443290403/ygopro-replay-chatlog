@@ -1,0 +1,7 @@
+{
+  "name": "yrp-tools-nodejs",
+  "version": "1.0.0",
+  "private": true,
+  "description": "yrp-tools 安卓版的 Node 侧：桥 + 进程内观战记录",
+  "main": "index.js"
+}

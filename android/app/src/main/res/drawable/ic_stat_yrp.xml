@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 常驻通知的图标。
+     安卓会把状态栏小图标**整块染成单色**（只取 alpha 通道），所以这里必须
+     是「白色图形 + 透明底」，不能有彩色、不能有背景（画个实心方块会变成一坨白）。
+     形状是一圈 + 中间的实心点，也就是通用的「录制中」符号。
+     另外：小图标不能用 @mipmap/ic_launcher —— 那是个自适应图标，系统取 alpha
+     之后会糊成一个白方块或整块空白。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- 外圈。两段同心圆靠 evenOdd 挖出中间的洞，nonZero 的话会填成实心圆。 -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M3,12 a9,9 0 1,0 18,0 a9,9 0 1,0 -18,0 M5,12 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0" />
+
+    <!-- 中间的实心点 -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,8 a4,4 0 1,0 0,8 a4,4 0 1,0 0,-8" />
+</vector>

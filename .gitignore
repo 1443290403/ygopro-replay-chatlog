@@ -1,0 +1,15 @@
+node_modules/
+
+# www/ 里的**同步产物**：由 scripts/build-web.mjs 从 electron 分支拷出来／生成出来，
+# 不入库 —— 入库就等于有了第二份真相，改一边忘一边会让用户拿到两个行为的版本。
+# 手写的三个不经同步，必须留着：www/yrp-shim.js、www/nodejs/index.js、www/nodejs/package.json
+www/index.html
+www/chat-extractor.html
+www/nodejs/_parser.js
+www/nodejs/_shipped.js
+www/nodejs/chat-extractor.html
+www/nodejs/proxy/
+
+# 安卓构建产物由 android/.gitignore 管（Capacitor 模板自带的），
+# 它已经排除了 local.properties、app/src/main/assets/public、
+# capacitor-cordova-android-plugins/ 以及 cap sync 生成的三份配置文件。

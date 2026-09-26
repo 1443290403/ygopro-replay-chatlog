@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">yrp-tools</string>
+    <string name="title_activity_main">yrp-tools</string>
+    <string name="package_name">local.yrp.tools</string>
+    <string name="custom_url_scheme">local.yrp.tools</string>
+</resources>

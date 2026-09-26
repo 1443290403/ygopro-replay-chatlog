@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+
+        <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
+            android:name=".MainActivity"
+            android:label="@string/title_activity_main"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:launchMode="singleTask"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"></meta-data>
+        </provider>
+
+        <!-- 观战是长时间挂机的长连接。Node 跑在插件起的那条后台线程上，
+             但那只是「线程」，不是「前台服务」—— 息屏或切后台之后系统照样
+             会把它冻住甚至杀掉，表现是录到一半录像断了、且没有任何提示。
+             下面这两行（receiver + service）就是那个前台服务。
+             插件自己只声明了 POST_NOTIFICATIONS，其余都得宿主补。 -->
+        <receiver
+            android:name="io.capawesome.capacitorjs.plugins.foregroundservice.NotificationActionBroadcastReceiver"
+            android:exported="false" />
+
+        <service
+            android:name="io.capawesome.capacitorjs.plugins.foregroundservice.AndroidForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <!-- Android 14 起 specialUse 类型**必须**带这个 property，
+                 否则 startForeground 直接抛异常。
+                 值会在应用商店审核时给人看，所以写成一句人话，
+                 而不是填个占位符。 -->
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="维持与卡牌游戏服务器的长连接以持续录制观战对局的对话，用户主动开始、可随时停止" />
+        </service>
+    </application>
+
+    <!-- Permissions -->
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- 前台服务本体 + specialUse 这个类型 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
+    <!-- 插件起服务时会自己 acquire 一个 PARTIAL_WAKE_LOCK（ForegroundService.java:107），
+         没有这个权限会抛 SecurityException，而且是在 startForegroundService 之后
+         才抛 —— 表现是点了开始没反应。 -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- Android 13 起通知要运行时授权。不给也能录（服务照跑），
+         只是状态栏看不到那个常驻通知。 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+</manifest>

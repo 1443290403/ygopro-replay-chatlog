@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  FileProvider 能对外暴露哪些目录。@capacitor/share 拿 file:// 路径去
+  FileProvider.getUriForFile()，**路径不在这个清单里会直接抛
+  IllegalArgumentException（Failed to find configured root that contains ...）**。
+
+  Capacitor 生成时只有下面两条（external / cache），**没有 files-path**。
+  而我们的导出文件正因为要「应用私有、卸载才清」而放在
+  context.getFilesDir()/export/ —— 也就是 Capacitor Filesystem 的
+  Directory.Data。不加这一条的话：观战、录像、解析全都正常，
+  唯独最后点「分享」的时候报一个看不懂的错。这种「只差最后一步」的坑
+  只有真机点得到，所以在这儿补齐。
+
+  <files-path path=".">  =  context.getFilesDir()
+-->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <files-path name="yrp_export" path="." />
+    <external-path name="my_images" path="." />
+    <cache-path name="my_cache_images" path="." />
+</paths>
