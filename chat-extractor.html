@@ -448,16 +448,19 @@ function exportGroups(results, opt){
   return out;
 }
 
+// One blank line between messages: the old single \n per message packed a dense
+// RP log into an unreadable block (2026-09-26 user request). buildPerFileTxt uses
+// the same separator, so it stays "the merged export minus the ### header line".
 function buildMergedTxt(groups){
   if (!groups.length) return "";
   return groups.map(g =>
-    "### " + g.file + "\n" + g.chats.map(c => c.who + ": " + c.msg).join("\n")
+    "### " + g.file + "\n" + g.chats.map(c => c.who + ": " + c.msg).join("\n\n")
   ).join("\n\n");
 }
 
 function buildPerFileTxt(group){
   if (!group || !group.chats || !group.chats.length) return "";
-  return group.chats.map(c => c.who + ": " + c.msg).join("\n");
+  return group.chats.map(c => c.who + ": " + c.msg).join("\n\n");
 }
 
 function buildJson(results, opt){
