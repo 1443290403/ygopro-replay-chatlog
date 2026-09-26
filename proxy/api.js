@@ -84,9 +84,9 @@ const IMPORT_MAX_TOTAL = 16 * 1024 * 1024;
 // 改了 `proxy.js` 的 DEFAULT_HOST / DEFAULT_PORT 就要回来同步这两份
 // （`_test_api.mjs` 有一条断言比对它们，漏改会红）。
 const DEFAULTS = {
-  proxy: { remoteHost: "example.com", remotePort: 888, listenPort: 888, recordOwnChat: false },
+  proxy: { remoteHost: "mygo.superpre.pro", remotePort: 888, listenPort: 888, recordOwnChat: false },
   observer: {
-    host: "example.com",
+    host: "mygo2.superpre.pro",
     port: 888,
     room: "",
     name: "观战记录",

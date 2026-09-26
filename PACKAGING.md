@@ -249,7 +249,7 @@ electron-builder 把 electron 解压到 `release/electron/win-unpacked.tmp`，
 
 ```
 ⚠️ 这一轮的产物在 release\electron-nRvz5D（不是 release\electron）：
-     A:\YGOPRO\yrp-tools-electron\release\electron-nRvz5D\yrp-tools-Setup.exe
+     <项目目录>\yrp-tools-electron\release\electron-nRvz5D\yrp-tools-Setup.exe
    release\electron 里那个是旧包，别用。
 ```
 

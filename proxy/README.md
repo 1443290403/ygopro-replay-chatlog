@@ -11,8 +11,8 @@
 
 两个输出的都是 `.yrp3d`。用窗口的话查看和导出都在里面；命令行版拖进 `../chat-extractor.html`。
 
-> **服务器地址已经填好了。** 窗口里的「服务器地址 / 端口」预填的就是
-> `example.com:888`，命令行版第一次问的时候括号里也是它，直接回车即可。
+> **服务器地址已经填好了。** 代理模式预填 `mygo.superpre.pro:888`、观战模式预填
+> `mygo2.superpre.pro:888`，命令行版第一次问的时候括号里也是它，直接回车即可。
 > 要连别的服务器就把它覆盖掉 —— 三个地方（`proxy.js` / `observer.js` / `api.js`）
 > 各有一份默认值，`_test_api.mjs` 会断言它们一致，改的时候别漏。
 
@@ -172,7 +172,7 @@ ygopro 客户端 ──► 127.0.0.1:<本机端口> ──► 第三方服务器
 第一次运行会问你三件事（括号里是默认值，直接回车就是它）：
 
 ```
-第三方服务器地址（域名或 IP）（回车 = example.com）: example.com
+第三方服务器地址（域名或 IP）（回车 = mygo.superpre.pro）: mygo.superpre.pro
 第三方服务器端口（回车 = 888）: 888
 本机监听端口（客户端等一会儿要连这个）（回车 = 888）: 888
 ```
@@ -188,7 +188,7 @@ ygopro 客户端 ──► 127.0.0.1:<本机端口> ──► 第三方服务器
 然后正常打牌 / 观战。代理窗口会实时打印它收到的东西：
 
 ```
-[14:32:42] 已连上 example.com:888
+[14:32:42] 已连上 mygo.superpre.pro:888
 [14:32:47] 我的昵称：RLX
 [14:33:01] RLX: 你好
 [14:33:05] 新人: 你好啊
@@ -209,7 +209,7 @@ ygopro 客户端 ──► 127.0.0.1:<本机端口> ──► 第三方服务器
 或命令行 `node observer.js`。第一次运行问你四件事（同样，括号里是默认值）：
 
 ```
-第三方服务器地址（域名或 IP）（回车 = example.com）: example.com
+第三方服务器地址（域名或 IP）（回车 = mygo2.superpre.pro）: mygo2.superpre.pro
 第三方服务器端口（回车 = 888）: 888
 房间名（要和客户端里填的完全一致）: 朋友的房
 观战用的昵称（服务器要一个名字）: 观战记录
@@ -322,7 +322,7 @@ node proxy.js --dump
 
 ```json
 {
-  "remoteHost": "example.com",
+  "remoteHost": "mygo.superpre.pro",
   "remotePort": 888,
   "listenPort": 888,
   "recordOwnChat": false
@@ -331,7 +331,7 @@ node proxy.js --dump
 
 | 字段 | 说明 |
 |---|---|
-| `remoteHost` / `remotePort` | 第三方服务器地址和端口。默认 `example.com:888` |
+| `remoteHost` / `remotePort` | 第三方服务器地址和端口。默认 `mygo.superpre.pro:888` |
 | `listenPort` | 本机监听端口，客户端填这个 |
 | `recordOwnChat` | 默认 `false`。你自己的发言由服务器广播回来，已经记下了。万一某个服务器不回显自己的消息，改成 `true` 补记（会自动去重，不会重复）。 |
 
@@ -339,7 +339,7 @@ node proxy.js --dump
 
 ```json
 {
-  "host": "example.com",
+  "host": "mygo2.superpre.pro",
   "port": 888,
   "room": "朋友的房",
   "name": "观战记录",
@@ -349,7 +349,7 @@ node proxy.js --dump
 
 | 字段 | 说明 |
 |---|---|
-| `host` / `port` | 第三方服务器地址和端口。默认 `example.com:888` |
+| `host` / `port` | 第三方服务器地址和端口。默认 `mygo2.superpre.pro:888` |
 | `room` | 房间名。必须和房主那边看到的**完全一致**，带密码写成 `房间名$密码` |
 | `name` | 观战用的昵称。服务器要求非空；服务器开了 `display_watchers` 时房主那边会看到 |
 | `version` | 协议版本号。填错会自动纠正并改写这里 |

@@ -41,7 +41,7 @@ const OUTDIR = process.env.YRP_REPLAYS_DIR || path.join(DATA, "replays");
 // 三份不一致的话会出现「界面显示的是一套、子进程实际跑的是另一套」。
 // 房间名没有合理的默认值（服务器会给你新建一个空房间，见下），留空必填。
 const DEFAULTS = {
-  host: "example.com",
+  host: "mygo2.superpre.pro",
   port: 888,
   room: "",
   name: "观战记录",
