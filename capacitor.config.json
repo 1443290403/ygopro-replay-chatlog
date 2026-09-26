@@ -1,0 +1,11 @@
+{
+  "appId": "local.yrp.tools",
+  "appName": "yrp-tools",
+  "webDir": "www",
+  "plugins": {
+    "Nodejs": {
+      "nodeDir": "nodejs",
+      "startMode": "auto"
+    }
+  }
+}

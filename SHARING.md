@@ -193,3 +193,32 @@ cd yrp-tools-android && npm run sync     # 首次必须跑；以后改了 electr
 | `master` 独有的 `proxy/gui.js` | 不用 | `master` 的 `_test_gui.mjs` | `master` |
 
 各分支自己的完整文档：`USAGE.md`（`master` / `electron` 分支）、`DEVELOPING.md`（`android` 分支）。
+
+### 10. 改完怎么推上去：
+
+三个目录各自就是一条分支的仓库，`origin` 都指向本仓库：
+
+| 目录 | 分支 |
+|---|---|
+| `yrp-tools` | `master` |
+| `yrp-tools-electron` | `electron` |
+| `yrp-tools-android` | `android` |
+
+```bash
+cd yrp-tools-electron
+git add -A
+git commit -m "改了什么"
+git push
+```
+
+* 提交身份在本仓库里用 `--local` 写死了 GitHub 的 noreply（`1443290403
+  <69240345+1443290403@users.noreply.github.com>`）。不要改成 `--global`
+  —— 那会把本机其他仓库的身份一起换掉
+* 跨分支的改动按第 4 节同步（`cd yrp-tools-android && npm run sync`），
+  **同步完两个目录都要提交**；只提交一边，另一边就停在漂移状态
+* `git clean -xdf` 会删掉被忽略的 `proxy/replays/`，那是本机的真实录像，别跑
+* `proxy/replays/`、`proxy/config.json`、`proxy/observer.json`、`proxy/gui-token.txt`、
+  `android/keystore.properties` 都在 `.gitignore` 里。它们不进仓库是有意的，
+  不要用 `git add -f` 绕过去
+* `yrp-tools` 的 `build/` 只在 `.git/info/exclude` 里（本机才有的 SEA 中转产物），
+  它不在 `.gitignore` 里 —— 这一条是为了让该文件与远端逐字节一致
