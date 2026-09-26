@@ -1,0 +1,14 @@
+# 用户自己的东西 —— 绝不入库（也绝不打进发布包）
+proxy/replays/
+proxy/config.json
+proxy/observer.json
+proxy/settings.json
+proxy/gui-token.txt
+proxy/_dump_*.log
+dev/_replay_data.bin
+dev/*.yrp
+dev/*.yrp3d
+
+# 构建产物
+release/
+node_modules/

@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YGO 录像对话导出器</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a23; --panel2:#1e2230; --line:#2a3040;
+    --fg:#e6e9f0; --dim:#8b93a7; --accent:#4a9eff; --ok:#3ecf8e;
+    --warn:#ffb020; --err:#ff5c5c; --tip:#5ad0e0; --srv:#c58fff;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font:14px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+  }
+  .wrap{max-width:1080px; margin:0 auto; padding:28px 20px 80px}
+  h1{font-size:20px; margin:0 0 4px; font-weight:600}
+  .sub{color:var(--dim); font-size:13px; margin-bottom:22px}
+
+  /* dropzone */
+  #drop{
+    border:2px dashed var(--line); border-radius:12px; padding:40px 20px;
+    text-align:center; cursor:pointer; transition:.15s; background:var(--panel);
+  }
+  #drop:hover,#drop.over{border-color:var(--accent); background:#1a2233}
+  #drop.over{transform:scale(1.01)}
+  #drop .big{font-size:15px; margin-bottom:6px}
+  #drop .small{color:var(--dim); font-size:12.5px}
+  #drop .icon{font-size:30px; margin-bottom:10px; opacity:.7}
+
+  .toolbar{
+    display:none; flex-wrap:wrap; gap:10px; align-items:center;
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:12px 14px; margin:18px 0;
+  }
+  .toolbar.show{display:flex}
+  .tb-group{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .tb-sep{width:1px; height:22px; background:var(--line)}
+  .grow{flex:1}
+
+  button{
+    background:var(--panel2); color:var(--fg); border:1px solid var(--line);
+    border-radius:7px; padding:7px 13px; font-size:13px; cursor:pointer;
+    font-family:inherit; transition:.12s; white-space:nowrap;
+  }
+  button:hover:not(:disabled){background:#252b3b; border-color:#3a4358}
+  button:disabled{opacity:.4; cursor:not-allowed}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:500}
+  button.primary:hover:not(:disabled){background:#3a8ae8}
+
+  input[type=search],select{
+    background:var(--panel2); border:1px solid var(--line); color:var(--fg);
+    border-radius:7px; padding:7px 11px; font-size:13px; font-family:inherit;
+  }
+  input[type=search]:focus,select:focus{outline:none; border-color:var(--accent)}
+  input[type=search]{min-width:190px}
+  label.chk{display:flex; align-items:center; gap:6px; font-size:13px; color:var(--dim); cursor:pointer; user-select:none}
+  label.chk input{accent-color:var(--accent); cursor:pointer}
+
+  .summary{
+    display:none; gap:22px; margin:0 0 16px; padding:12px 16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+  }
+  .summary.show{display:flex}
+  .stat{font-size:12.5px; color:var(--dim)}
+  .stat b{display:block; font-size:19px; color:var(--fg); font-weight:600; line-height:1.3}
+
+  /* file cards */
+  .card{
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    margin-bottom:12px; overflow:hidden;
+  }
+  .card-head{
+    display:flex; align-items:center; gap:10px; padding:11px 14px;
+    cursor:pointer; user-select:none;
+  }
+  .card-head:hover{background:var(--panel2)}
+  .card-name{font-weight:500; flex:1; word-break:break-all; font-size:13.5px}
+  .badge{
+    font-size:11px; padding:2px 8px; border-radius:20px; white-space:nowrap;
+    background:var(--panel2); color:var(--dim); border:1px solid var(--line);
+  }
+  .badge.ok{color:var(--ok); border-color:#1f4a37}
+  .badge.warn{color:var(--warn); border-color:#4a3c1a}
+  .badge.err{color:var(--err); border-color:#4a2020}
+  .chev{color:var(--dim); transition:.15s; font-size:12px}
+  .card.collapsed .chev{transform:rotate(-90deg)}
+  .card-body{padding:0 14px 12px; border-top:1px solid var(--line)}
+  .card.collapsed .card-body{display:none}
+  .meta{font-size:12px; color:var(--dim); padding:9px 0; display:flex; gap:16px; flex-wrap:wrap}
+
+  .msg{display:flex; gap:10px; padding:5px 0; border-bottom:1px solid #1d2130; align-items:baseline}
+  .msg:last-child{border-bottom:none}
+  .who{
+    font-size:12px; padding:1px 7px; border-radius:5px; white-space:nowrap;
+    background:var(--panel2); color:var(--dim); min-width:76px; text-align:center;
+    overflow:hidden; text-overflow:ellipsis; max-width:150px;
+  }
+  .who.player{color:var(--accent); border:1px solid #23405e}
+  .who.observer{color:var(--warn); border:1px solid #4d3a12}
+  .who.tip{color:var(--tip); border:1px solid #1d4750}
+  .who.server{color:var(--srv); border:1px solid #3b2a55}
+  .text{flex:1; word-break:break-word; white-space:pre-wrap}
+  .off{font-size:11px; color:#5a6377; font-family:Consolas,monospace}
+  .empty{color:var(--dim); font-size:12.5px; padding:10px 0; font-style:italic}
+
+  #progress{
+    display:none; margin:14px 0; font-size:13px; color:var(--dim);
+  }
+  #progress.show{display:block}
+  .bar{height:3px; background:var(--panel2); border-radius:2px; overflow:hidden; margin-top:7px}
+  .bar i{display:block; height:100%; background:var(--accent); width:0; transition:width .1s}
+
+  #hidden{display:none}
+  mark{background:#4a3c1a; color:#ffd77a; border-radius:2px; padding:0 1px}
+  .target{
+    display:none; font-size:12.5px; color:var(--dim); margin:-6px 0 14px;
+    padding:8px 12px; background:var(--panel); border:1px solid var(--line);
+    border-radius:8px;
+  }
+  .target.show{display:block}
+  .target b{color:var(--fg)}
+  .target .hint{color:var(--warn)}
+
+  /* export-completion toast */
+  #toast{
+    position:fixed; right:20px; bottom:20px; z-index:999; width:min(400px,calc(100vw - 40px));
+    background:var(--panel2); border:1px solid var(--line); border-left:3px solid var(--ok);
+    border-radius:10px; padding:13px 16px 13px 15px; font-size:13px;
+    box-shadow:0 10px 32px rgba(0,0,0,.55);
+    opacity:0; transform:translateY(14px); pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease;
+  }
+  #toast.show{opacity:1; transform:translateY(0); pointer-events:auto}
+  #toast .t-head{display:flex; align-items:center; gap:8px; font-weight:600; margin-bottom:6px}
+  #toast .t-head .tick{color:var(--ok)}
+  #toast .t-close{
+    margin-left:auto; background:none; border:none; color:var(--dim); cursor:pointer;
+    font-size:15px; line-height:1; padding:2px 4px; border-radius:4px;
+  }
+  #toast .t-close:hover{background:#2b3242; color:var(--fg)}
+  #toast .t-dest{color:var(--dim); font-size:12px; margin-bottom:7px}
+  #toast .t-dest b{color:var(--fg)}
+  #toast .t-files{
+    font-family:Consolas,"Courier New",monospace; font-size:11.5px; color:var(--dim);
+    max-height:120px; overflow-y:auto; line-height:1.65; word-break:break-all;
+    border-top:1px solid var(--line); padding-top:7px;
+  }
+  #toast .t-files a{color:var(--accent); text-decoration:underline; text-underline-offset:2px}
+  #toast .t-files a:hover{color:#7cc4ff}
+  #toast .t-hint{color:#5a6377; font-size:11px; margin-top:6px}
+  #toast .t-more{color:var(--warn); font-size:11.5px; margin-top:5px}
+
+  .note{
+    background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--warn);
+    border-radius:8px; padding:11px 14px; font-size:12.5px; color:var(--dim); margin:18px 0;
+  }
+  .note b{color:var(--fg)}
+  .note code{background:var(--panel2); padding:1px 5px; border-radius:4px; font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>YGO 录像对话导出器</h1>
+  <div class="sub">批量提取 <code>.yrp3d</code> 录像里的聊天记录。全在本地解析，不上传。</div>
+
+  <div id="drop">
+    <div class="icon">📁</div>
+    <div class="big">把 <b>.yrp3d</b> 录像拖到这里，或点击选择</div>
+    <div class="small">支持多选、支持直接拖入整个文件夹 · 无法解析的文件会单独标出来，不影响其他文件</div>
+    <div style="margin-top:14px">
+      <button id="btnDir" type="button">选择整个文件夹…</button>
+    </div>
+  </div>
+  <input type="file" id="fileInput" multiple accept=".yrp3d,.yrp" hidden>
+  <input type="file" id="dirInput" webkitdirectory directory multiple hidden>
+
+  <div id="progress"><span id="progText"></span><div class="bar"><i id="progBar"></i></div></div>
+
+  <div class="toolbar" id="toolbar">
+    <div class="tb-group">
+      <input type="search" id="search" placeholder="搜索对话内容…">
+      <select id="filter">
+        <option value="all">全部消息</option>
+        <option value="player">只看玩家发言</option>
+        <option value="observer">只看观战发言</option>
+        <option value="nosys">排除系统消息</option>
+      </select>
+    </div>
+    <div class="tb-sep"></div>
+    <div class="tb-group">
+      <label class="chk"><input type="checkbox" id="stripSys"> 导出时排除系统消息</label>
+      <label class="chk"><input type="checkbox" id="stripObs"> 导出时排除观战发言</label>
+    </div>
+    <div class="grow"></div>
+    <div class="tb-group">
+      <button id="btnDir2" title="选择导出到哪个文件夹">📁 导出目录…</button>
+      <button id="btnTxt" class="primary">导出合并 TXT</button>
+      <button id="btnEach">分文件 TXT</button>
+      <button id="btnJson">导出 JSON</button>
+      <button id="btnCsv">导出 CSV</button>
+      <button id="btnCopy">复制全部</button>
+      <button id="btnClear">清空</button>
+    </div>
+  </div>
+
+  <div class="target" id="target"></div>
+
+  <div class="summary" id="summary">
+    <div class="stat"><b id="stFiles">0</b>个文件</div>
+    <div class="stat"><b id="stMsgs">0</b>条消息</div>
+    <div class="stat"><b id="stPlayer">0</b>条玩家发言</div>
+    <div class="stat"><b id="stObs">0</b>条观战发言</div>
+    <div class="stat"><b id="stFailed">0</b>个解析失败</div>
+  </div>
+
+  <div id="results"></div>
+
+  <div class="note">
+    <b>格式说明：</b><code>.yrp3d</code> 是一个包流，每个包为 <code>uint8 类型 + uint32 长度 + 数据</code>。
+    对话包（类型 230）内容为 <code>uint32 说话者 + UTF-16LE 字符串</code>，不含时间戳，因此消息顺序只能依据包在文件中的先后顺序。
+    包链必须恰好走到文件末尾，对不上就判定为无法解析。
+  </div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+
+/* @parser:begin
+ *
+ * 这一段是**共享工具库**，两个网页共用：
+ *   - 解析：本页面的拖入功能、proxy/gui.js 的录像列表
+ *   - 导出格式：本页面的导出按钮、proxy/gui.html 的导出按钮
+ *
+ * 也就是说界面上导出的 TXT/JSON/CSV 和这里导出的**是同一份代码产出的**，
+ * 两边不会各自漂移。改这段之前先看 yrp-tools/README.md 的
+ * 「改了代码记得跑回归测试」。
+ *
+ * 四条硬约束，破了会静默半坏：
+ *   1. 上下两行哨兵注释不要动。
+ *   2. 块内不能引用下面定义的东西（没有 DOM、没有 alert、没有 RESULTS）。
+ *   3. 块内不能有顶层 await —— new Function 的函数体和经典 <script> 都不支持。
+ *   4. 块内不能出现字面的 script 结束标签，HTML 解析器会在那里直接截断本页的
+ *      内联脚本 —— 连 @parser:end 一起吃掉，_parser.js 就会报「找不到哨兵」。
+ *
+ * 抠取逻辑见 ../_parser.js：Node 侧整段 new Function()，浏览器侧包一层 IIFE
+ * 挂到 window.YRP_PARSER（裸发的话顶层 const 挂不到 window 上，见那边的注释）。
+ */
+const SIBYL_CHAT = 230, SIBYL_REPLAY = 231, SIBYL_NAME = 235;
+const COLORS = {8:"LIGHTBLUE",11:"RED",12:"GREEN",13:"BLUE",14:"BABYBLUE",
+                15:"PINK",16:"YELLOW",17:"WHITE",18:"GRAY",19:"DARKGRAY"};
+
+/* ---------- decoding helpers ---------- */
+
+// NUL-terminated UTF-16LE. Surrogate pairs survive because we concatenate code
+// units rather than decoding per-unit.
+function u16z(bytes){
+  let s = "";
+  for (let i = 0; i + 1 < bytes.length; i += 2){
+    const c = bytes[i] | (bytes[i+1] << 8);
+    if (c === 0) break;
+    s += String.fromCharCode(c);
+  }
+  return s;
+}
+
+// Anything that is not a well-formed .yrp3d packet stream gets the same message.
+// There is deliberately no special case for other replay formats: to this tool
+// they are simply files that fail to parse.
+const PARSE_FAIL = "无法解析：不是有效的 .yrp3d 录像文件，或者文件已损坏。";
+
+/* ---------- the parser ---------- */
+
+function parseYrp3d(bytes){
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const packets = [];
+  let o = 0;
+  while (o < bytes.length){
+    if (o + 5 > bytes.length)
+      throw new Error("包头部截断于 0x" + o.toString(16));
+    const type = bytes[o];
+    const len  = dv.getUint32(o + 1, true);
+    if (o + 5 + len > bytes.length)
+      throw new Error("0x"+o.toString(16)+" 处的包(类型"+type+")声称长 "+len+
+                      " 字节，但只剩 "+(bytes.length-o-5)+" 字节");
+    packets.push({offset:o, type, payload:bytes.subarray(o+5, o+5+len)});
+    o += 5 + len;
+  }
+  return packets;
+}
+
+function readNameSlots(packets){
+  // 100-byte slots; layout observed as [p0,'---',p0,p1,'---',p1].
+  // Only the LAST name packet counts. A stream may carry several -- the logger
+  // re-emits the whole table when a seat changes -- and concatenating them would
+  // shift the indices seatNames() reads. MDPro3 writes exactly one, so both
+  // readings agree on existing files.
+  let last = null;
+  for (const p of packets) if (p.type === SIBYL_NAME) last = p;
+  if (!last) return [];
+  const slots = [];
+  for (let i = 0; i + 99 < last.payload.length; i += 100)
+    slots.push(u16z(last.payload.subarray(i, i + 100)));
+  return slots;
+}
+
+function seatNames(slots){
+  const real = slots.filter(s => s && s !== "---");
+  const p0 = (slots[0] && slots[0] !== "---") ? slots[0] : (real[0] || "P0");
+  const p1 = (slots[3] && slots[3] !== "---") ? slots[3]
+           : (real[1] !== undefined ? real[1] : p0);
+  return {0:p0, 1:p1};
+}
+
+// 7 is TYPE_OBSERVER in srvpro's NETPLAYER table -- spectator chatter is recorded
+// like anyone else's, it just never gets a name slot, so it can only be labelled
+// generically.
+const OBSERVER = 7;
+// srvpro relays spectator chat a second way, but only when
+// settings.modules.display_watchers is on (it defaults to false): the message is
+// rebroadcast as a room chat with player_type 9 and the speaker's name folded
+// into the text. See ygopro-server.coffee:3480.
+const WATCHER_RELAY = 9;
+
+function classify(ptype){
+  if (ptype === 0 || ptype === 1) return "player";
+  if (ptype === OBSERVER || ptype === WATCHER_RELAY) return "observer";
+  if (ptype >= 10) return "server";
+  return "tip";
+}
+
+// pull the name srvpro prefixed on, using the first ": " -- names may contain
+// colons themselves, but the prefix always comes first
+function relayedName(msg){
+  if (!msg) return null;
+  const i = msg.indexOf(": ");
+  return i > 0 ? msg.slice(0, i) : null;
+}
+
+// the server talking, as opposed to a human: tips plus coloured announcements
+function isSystem(kind){
+  return kind === "tip" || kind === "server";
+}
+
+function speakerLabel(ptype, seats, msg){
+  const kind = classify(ptype);
+  if (kind === "player")
+    // just the name; the seat index rides along separately for the hover tooltip,
+    // which is the only place it still shows -- useful when both seats are named
+    // the same and the labels alone cannot tell them apart
+    return {name: seats[ptype], kind, seat: ptype};
+  if (kind === "observer"){
+    // the plain form carries no name at all -- sibyl_name has no slot for it
+    const who = ptype === WATCHER_RELAY ? relayedName(msg) : null;
+    return {name: who ? "观战者「" + who + "」" : "观战者", kind};
+  }
+  if (kind === "server") return {name:"SERVER", kind};
+  return {name: COLORS[ptype] || ("系统" + ptype), kind};
+}
+
+function extract(text, bytes){
+  let packets;
+  try { packets = parseYrp3d(bytes); }
+  catch(e){ return {ok:false, file:text, size:bytes.length, error:PARSE_FAIL}; }
+
+  const slots = readNameSlots(packets);
+  const seats = seatNames(slots);
+  const chats = [];
+  let embedded = 0;
+
+  for (const p of packets){
+    if (p.type === SIBYL_CHAT && p.payload.length >= 6){
+      const ptype = new DataView(p.payload.buffer, p.payload.byteOffset,
+                                 p.payload.byteLength).getUint32(0, true);
+      const msg = u16z(p.payload.subarray(4));
+      const s = speakerLabel(ptype, seats, msg);
+      chats.push({offset:p.offset, playerType:ptype, who:s.name, kind:s.kind,
+                  seat: s.seat === undefined ? null : s.seat, msg});
+    } else if (p.type === SIBYL_REPLAY){
+      embedded = p.payload.length;
+    }
+  }
+  return {ok:true, file:text, kind:"yrp3d", size:bytes.length, packets:packets.length,
+          seats, slots, chats, hasEmbedded:embedded>0, embeddedSize:embedded};
+}
+
+/* ---------- export formats ---------- *
+ *
+ * These live inside the sentinel block on purpose: the GUI (proxy/gui.html) builds
+ * its exports with the very same functions, so the two products cannot drift apart.
+ * Everything here is pure -- no DOM, no alert(), no globals from the page below.
+ *
+ * The builders return plain text WITHOUT a byte-order mark; adding one is the job
+ * of whoever writes the bytes (see withBom at the bottom of this section).
+ */
+
+// U+FEFF, written as an escape and never as a literal. A literal is invisible in
+// every editor, so the next person to retype that line drops it silently -- and no
+// test can see the difference. Keep it escaped.
+function withBom(text){
+  return "﻿" + text;
+}
+
+// Export filenames carry the export time so repeat exports never overwrite the
+// previous one -- writing into a chosen folder replaces same-named files silently.
+// The Date is injectable so tests do not depend on the clock.
+function stamp(d){
+  const t = d || new Date(), p = n => String(n).padStart(2, "0");
+  return t.getFullYear() + p(t.getMonth() + 1) + p(t.getDate()) + "-" +
+         p(t.getHours()) + p(t.getMinutes()) + p(t.getSeconds());
+}
+
+// One stamp per export action, so every file from a single run shares a suffix
+// and stays grouped. Never call stamp() inside a per-file loop.
+function withStamp(name, s){
+  const i = name.lastIndexOf(".");
+  return i < 0 ? name + "_" + s : name.slice(0, i) + "_" + s + name.slice(i);
+}
+
+// "x.yrp3d" -> "x". Both extensions, because the file picker accepts .yrp as well.
+function exportBaseName(file){
+  return String(file).replace(/\.(yrp3d|yrp)$/i, "");
+}
+
+// Two independent strips. "排除系统消息" keeps both duelists and spectators -- they
+// are all people rather than the server. "排除观战发言" is for when you only want
+// what the two duelists said. Never mutates the input.
+function filterChats(chats, opt){
+  const strip = !!(opt && opt.strip), noObs = !!(opt && opt.noObs);
+  return (chats || []).filter(c =>
+    !(strip && isSystem(c.kind)) && !(noObs && c.kind === "observer"));
+}
+
+// Same filter, plus "drop a file that ended up with nothing to say". Used by the
+// TXT exports and by 复制全部. JSON deliberately does NOT use this: its envelope
+// lists every file that parsed, empty or not.
+function exportGroups(results, opt){
+  const out = [];
+  for (const r of results){
+    if (!r.ok || !r.chats || !r.chats.length) continue;
+    const cs = filterChats(r.chats, opt);
+    if (cs.length) out.push({file:r.file, chats:cs});
+  }
+  return out;
+}
+
+function buildMergedTxt(groups){
+  if (!groups.length) return "";
+  return groups.map(g =>
+    "### " + g.file + "\n" + g.chats.map(c => c.who + ": " + c.msg).join("\n")
+  ).join("\n\n");
+}
+
+function buildPerFileTxt(group){
+  if (!group || !group.chats || !group.chats.length) return "";
+  return group.chats.map(c => c.who + ": " + c.msg).join("\n");
+}
+
+function buildJson(results, opt){
+  return JSON.stringify(results.filter(r => r.ok).map(r => ({
+    file: r.file, size: r.size, packets: r.packets,
+    seats: r.seats,
+    chats: filterChats(r.chats, opt).map(c => ({
+      offset: c.offset, playerType: c.playerType, speaker: c.who, seat: c.seat,
+      kind: c.kind, message: c.msg
+    }))
+  })), null, 2);
+}
+
+// RFC4180 quoting. Returns "" when there is no data row at all, so the caller can
+// tell "nothing to export" apart from "an export that happens to be empty".
+function buildCsv(results, opt){
+  const q = s => '"' + String(s).replace(/"/g, '""') + '"';
+  const rows = [["文件","偏移","说话者类型","说话者","消息"].join(",")];
+  for (const r of results){
+    if (!r.ok) continue;
+    for (const c of filterChats(r.chats, opt))
+      rows.push([q(r.file), "0x"+c.offset.toString(16), c.playerType,
+                 q(c.who), q(c.msg)].join(","));
+  }
+  return rows.length === 1 ? "" : rows.join("\r\n");
+}
+
+// The GUI's /api/recording response -> the same shape extract() returns, so one
+// set of builders can serve both the server's recordings and dragged-in files.
+// trimmed/running are carried through for the UI's own notices; the builders above
+// never read them, so they stay out of the exported formats.
+function normalizeServer(resp){
+  if (!resp || !resp.ok)
+    return {ok:false, file:(resp && (resp.name || resp.file)) || "",
+            error:(resp && resp.error) || PARSE_FAIL};
+  return {
+    ok: true,
+    file: resp.name || resp.file,
+    size: resp.size,
+    packets: resp.packets,
+    seats: resp.seats,
+    chats: resp.chats || [],
+    trimmed: !!resp.trimmed,
+    running: !!resp.running,
+  };
+}
+
+// Read a list of sources one at a time, keeping failures in the result list rather
+// than throwing -- a single unreadable file must not sink the whole export. io.read
+// is injected so this stays free of fetch() and of the DOM, and testable.
+async function gatherSources(keys, io){
+  const results = [];
+  for (const k of keys){
+    let r;
+    try { r = await io.read(k); }
+    catch (e){ r = {ok:false, file:String(k), error:"读取失败：" + ((e && e.message) || e)}; }
+    results.push(r);
+  }
+  return results;
+}
+/* @parser:end */
+
+/* ---------- state ---------- */
+
+let RESULTS = [];
+let CUR = "";   // current search term, for highlighting
+
+/* ---------- file intake ---------- */
+
+const drop = document.getElementById("drop");
+const fileInput = document.getElementById("fileInput");
+const dirInput  = document.getElementById("dirInput");
+
+drop.addEventListener("click", () => fileInput.click());
+drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("over"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+drop.addEventListener("drop", async e => {
+  e.preventDefault(); drop.classList.remove("over");
+  const items = [...e.dataTransfer.items];
+  const files = [];
+  // directories need the entries API to walk
+  const walk = async (entry, path) => {
+    if (entry.isFile){
+      const f = await new Promise(r => entry.file(r));
+      files.push(f);
+    } else if (entry.isDirectory){
+      // readEntries() returns at most 100 entries per call, so calling it once
+      // silently drops the rest of a large folder. Keep asking until it comes
+      // back empty.
+      const reader = entry.createReader();
+      for (;;){
+        const kids = await new Promise(r => reader.readEntries(r));
+        if (!kids.length) break;
+        for (const k of kids) await walk(k);
+      }
+    }
+  };
+  const entries = items.map(i => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter(Boolean);
+  if (entries.length){
+    for (const en of entries) await walk(en);
+  } else {
+    files.push(...e.dataTransfer.files);
+  }
+  handleFiles(files);
+});
+
+fileInput.addEventListener("change", e => handleFiles([...e.target.files]));
+dirInput.addEventListener("change",  e => handleFiles([...e.target.files]));
+
+async function handleFiles(files){
+  files = files.filter(f => /\.(yrp3d|yrp)$/i.test(f.name));
+  if (!files.length) return;
+
+  const prog = document.getElementById("progress");
+  const txt  = document.getElementById("progText");
+  const bar  = document.getElementById("progBar");
+  prog.classList.add("show");
+
+  for (let i = 0; i < files.length; i++){
+    const f = files[i];
+    txt.textContent = `解析中 ${i+1}/${files.length} — ${f.name}`;
+    bar.style.width = ((i / files.length) * 100) + "%";
+    try {
+      const buf = await f.arrayBuffer();
+      RESULTS.push(extract(f.name, new Uint8Array(buf)));
+    } catch(err){
+      RESULTS.push({ok:false, file:f.name, error:"读取失败: " + err.message});
+    }
+    // yield so the progress bar actually paints
+    if (i % 4 === 3) await new Promise(r => setTimeout(r, 0));
+  }
+
+  bar.style.width = "100%";
+  await new Promise(r => setTimeout(r, 180));
+  prog.classList.remove("show");
+
+  render();
+}
+
+/* ---------- rendering ---------- */
+
+function visibleChats(r){
+  if (!r.ok || !r.chats) return [];
+  const mode = document.getElementById("filter").value;
+  const q = document.getElementById("search").value.trim().toLowerCase();
+  return r.chats.filter(c => {
+    if (mode === "player"   && c.kind !== "player") return false;
+    if (mode === "observer" && c.kind !== "observer") return false;
+    // "排除系统消息" keeps both duelists and spectators -- spectators are people
+    // talking, not the server.
+    if (mode === "nosys" && isSystem(c.kind)) return false;
+    if (q && !c.msg.toLowerCase().includes(q) && !c.who.toLowerCase().includes(q))
+      return false;
+    return true;
+  });
+}
+
+function esc(s){
+  return s.replace(/[&<>"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
+}
+
+function highlight(s){
+  const q = CUR;
+  if (!q) return esc(s);
+  const i = s.toLowerCase().indexOf(q);
+  if (i < 0) return esc(s);
+  return esc(s.slice(0,i)) + "<mark>" + esc(s.slice(i, i+q.length)) + "</mark>" +
+         esc(s.slice(i+q.length));
+}
+
+function render(){
+  CUR = document.getElementById("search").value.trim().toLowerCase();
+
+  const ok = RESULTS.filter(r => r.ok);
+  const chats = ok.flatMap(r => r.chats || []);
+  const playerMsgs = chats.filter(c => c.kind === "player").length;
+
+  document.getElementById("stFiles").textContent  = ok.length;
+  document.getElementById("stMsgs").textContent   = chats.length;
+  document.getElementById("stPlayer").textContent = playerMsgs;
+  document.getElementById("stObs").textContent    = chats.filter(c => c.kind === "observer").length;
+  document.getElementById("stFailed").textContent = RESULTS.filter(r => !r.ok).length;
+
+  document.getElementById("toolbar").classList.add("show");
+  document.getElementById("summary").classList.add("show");
+
+  const host = document.getElementById("results");
+  host.innerHTML = "";
+
+  if (!RESULTS.length){
+    host.innerHTML = '<div class="empty">还没有载入文件。</div>';
+    return;
+  }
+
+  for (const r of RESULTS){
+    const card = document.createElement("div");
+    card.className = "card";
+
+    if (!r.ok){
+      card.innerHTML =
+        `<div class="card-head"><span class="badge err">解析失败</span>` +
+        `<span class="card-name">${esc(r.file)}</span></div>` +
+        `<div class="card-body"><div class="empty">${esc(r.error)}</div></div>`;
+      host.appendChild(card);
+      continue;
+    }
+
+    const shown = visibleChats(r);
+    const total = r.chats.length;
+
+    let badges = `<span class="badge ${total ? "ok" : ""}">${total} 条对话</span>`;
+    if (shown.length !== total)
+      badges += `<span class="badge">显示 ${shown.length}/${total}</span>`;
+
+    let meta = `${r.size.toLocaleString()} 字节 · ${r.packets} 个包`;
+    if (r.seats) meta += ` · 座位 0=${esc(r.seats[0])} / 1=${esc(r.seats[1])}`;
+
+    let body;
+    if (!total){
+      body = `<div class="empty">这个录像里没有任何对话。</div>`;
+    } else if (!shown.length){
+      body = `<div class="empty">${total} 条对话都被当前筛选条件隐藏了。</div>`;
+    } else {
+      body = shown.map(c =>
+        `<div class="msg">` +
+          `<span class="who ${c.kind}" title="${esc(c.seat === null
+             ? c.who : c.who + "（座位 " + c.seat + "）")}">${esc(c.who)}</span>` +
+          `<span class="text">${highlight(c.msg)}</span>` +
+          `<span class="off">0x${c.offset.toString(16)}</span>` +
+        `</div>`).join("");
+    }
+
+    card.innerHTML =
+      `<div class="card-head">` +
+        `<span class="chev">▼</span>` +
+        `<span class="card-name">${esc(r.file)}</span>${badges}` +
+      `</div>` +
+      `<div class="card-body"><div class="meta"><span>${meta}</span></div>${body}</div>`;
+
+    // keep a card collapsed if the user already collapsed a sibling
+    if (COLLAPSED.has(r.file)) card.classList.add("collapsed");
+    card.querySelector(".card-head").addEventListener("click", () => {
+      card.classList.toggle("collapsed");
+      if (card.classList.contains("collapsed")) COLLAPSED.add(r.file);
+      else COLLAPSED.delete(r.file);
+    });
+
+    host.appendChild(card);
+  }
+}
+
+const COLLAPSED = new Set();
+
+/* ---------- export ---------- *
+ *
+ * The formats themselves (exportGroups / buildMergedTxt / buildJson / buildCsv /
+ * withBom / stamp ...) live up in the shared block, so the GUI builds byte-identical
+ * files. What stays down here is only what needs the DOM: the checkboxes, the
+ * directory picker, the downloads and the toast.
+ */
+
+// Read the checkboxes in exactly one place, so all four formats filter alike --
+// including JSON and CSV, which used to ignore them.
+function exportOpt(){
+  return {
+    strip: document.getElementById("stripSys").checked,
+    noObs: document.getElementById("stripObs").checked,
+  };
+}
+
+let dirHandle = null;
+
+function updateTarget(){
+  const el = document.getElementById("target");
+  el.classList.add("show");
+  el.innerHTML = dirHandle
+    ? `导出目标：<b>${esc(dirHandle.name)}\\</b>（你选择的文件夹）`
+    : `导出目标：<b>浏览器下载目录</b>` +
+      (window.showDirectoryPicker
+        ? ` · <span class="hint">点「📁 导出目录…」可改成指定文件夹</span>`
+        : ` · <span class="hint">当前浏览器不支持指定目录（需 Chrome / Edge）</span>`);
+}
+
+// NOTE: #btnDir is the dropzone's "选择整个文件夹" (replay input) button -- do not
+// reuse that id here. #btnDir2 is the export-directory picker.
+document.getElementById("btnDir2").addEventListener("click", pickDir);
+
+async function pickDir(){
+  if (!window.showDirectoryPicker){
+    alert("当前浏览器不支持直接选择导出目录（需要 Chrome / Edge）。\n\n" +
+          "导出文件会照常保存到浏览器的下载目录。\n" +
+          "如果想要固定输出目录，也可以用命令行版：\n" +
+          "  python yrp3d_chat.py -o 目标目录 *.yrp3d");
+    return;
+  }
+  try {
+    dirHandle = await window.showDirectoryPicker({mode:"readwrite"});
+    updateTarget();
+  } catch(err){
+    // AbortError = user cancelled the picker; anything else is worth reporting
+    if (err.name !== "AbortError")
+      alert("无法使用所选目录：" + err.message +
+            "\n\n可能是浏览器不允许在本地文件（file://）页面使用此功能。\n" +
+            "导出将退回浏览器下载目录。");
+  }
+}
+
+// stamp() / withStamp() / exportBaseName() used to be defined here; they now live in
+// the shared block above so the GUI stamps its exports identically.
+
+// Blob URLs backing the toast's filename links. A page cannot open a file that is
+// already on disk -- no browser API grants that -- so clicking a name shows the
+// exported *content* in a new tab instead. The bytes are identical to the file
+// that was just written; it is just the browser's copy, not the one on disk.
+let toastUrls = [];
+function clearToastUrls(){
+  for (const u of toastUrls) URL.revokeObjectURL(u);
+  toastUrls = [];
+}
+
+let toastTimer = null;
+function toast(count, dest, files){
+  const el = document.getElementById("toast");
+  clearToastUrls();
+
+  const shown = files.slice(0, 12);
+  const links = shown.map(f => {
+    // withBom here too, so the preview a clicked filename opens is the same bytes
+    // as the file that was written (it used to be 3 bytes shorter)
+    const url = URL.createObjectURL(new Blob([withBom(f.text)], {type: f.mime + ";charset=utf-8"}));
+    toastUrls.push(url);
+    return `<a href="${url}" target="_blank" rel="noopener">${esc(f.name)}</a>`;
+  }).join("<br>");
+
+  el.innerHTML =
+    `<div class="t-head"><span class="tick">✓</span>已导出 ${count} 个文件` +
+    `<button class="t-close" title="关闭">✕</button></div>` +
+    `<div class="t-dest">保存到：<b>${esc(dest)}</b></div>` +
+    `<div class="t-files">${links}</div>` +
+    `<div class="t-hint">点文件名可在新标签页里查看内容</div>` +
+    (files.length > shown.length
+      ? `<div class="t-more">…另外 ${files.length - shown.length} 个</div>` : "");
+
+  el.classList.add("show");
+  el.querySelector(".t-close").addEventListener("click", () => {
+    clearTimeout(toastTimer); el.classList.remove("show"); clearToastUrls();
+  });
+  clearTimeout(toastTimer);
+  // the auto-hide deliberately does NOT revoke: a tab opened from a link stays
+  // refreshable until the next export replaces the URLs
+  toastTimer = setTimeout(() => el.classList.remove("show"), 9000);
+}
+
+// Writes into the chosen export folder when one is set, otherwise falls back to
+// the browser's own download. Always async -- callers must await.
+// Returns where the file actually landed, so the toast can report the truth.
+async function download(name, text, mime){
+  const blob = new Blob([withBom(text)], {type: mime + ";charset=utf-8"});
+
+  if (dirHandle){
+    try {
+      const fh = await dirHandle.getFileHandle(name, {create:true});
+      const w  = await fh.createWritable();
+      await w.write(blob);
+      await w.close();
+      return "folder";
+    } catch(err){
+      dirHandle = null; updateTarget();
+      alert("写入所选文件夹失败，已改存到浏览器下载目录：\n" + err.message);
+    }
+  }
+
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  return "browser";
+}
+
+// Read the label off dirHandle directly rather than from download()'s return
+// value: a mid-run write failure clears dirHandle, and pairing the two would
+// risk reading .name off null.
+function destLabel(){
+  return dirHandle ? dirHandle.name + "\\" : "浏览器下载目录";
+}
+
+// Shared by the quick exports: one file, stamped, then confirm it landed.
+async function exportOne(base, text, mime){
+  const name = withStamp(base, stamp());
+  await download(name, text, mime);
+  toast(1, destLabel(), [{name, text, mime}]);
+}
+
+document.getElementById("btnTxt").addEventListener("click", async () => {
+  const txt = buildMergedTxt(exportGroups(RESULTS, exportOpt()));
+  if (!txt) return alert("没有可导出的对话。");
+  await exportOne("录像对话汇总.txt", txt, "text/plain");
+});
+
+document.getElementById("btnEach").addEventListener("click", async () => {
+  const groups = exportGroups(RESULTS, exportOpt());
+  if (!groups.length) return alert("没有可导出的对话。");
+  const s = stamp();          // one stamp for the whole run, so the set stays grouped
+  const files = [];
+  for (const g of groups){
+    const name = withStamp(exportBaseName(g.file) + "_chat.txt", s);
+    const text = buildPerFileTxt(g);
+    await download(name, text, "text/plain");
+    files.push({name, text, mime:"text/plain"});
+    // only needed for the download-folder fallback, where browsers throttle bursts
+    if (!dirHandle) await new Promise(r => setTimeout(r, 350));
+  }
+  toast(files.length, destLabel(), files);
+});
+
+// No "nothing to export" check here, deliberately: the JSON envelope lists every
+// file that parsed, so an empty set is still a valid answer ([]). The TXT/CSV
+// exports, which would produce a meaningless file, do check.
+document.getElementById("btnJson").addEventListener("click", async () => {
+  await exportOne("录像对话.json", buildJson(RESULTS, exportOpt()), "application/json");
+});
+
+document.getElementById("btnCsv").addEventListener("click", async () => {
+  const csv = buildCsv(RESULTS, exportOpt());
+  if (!csv) return alert("没有可导出的对话。");
+  await exportOne("录像对话.csv", csv, "text/csv");
+});
+
+document.getElementById("btnCopy").addEventListener("click", async () => {
+  const txt = buildMergedTxt(exportGroups(RESULTS, exportOpt()));
+  if (!txt) return alert("没有可导出的对话。");
+  try {
+    await navigator.clipboard.writeText(txt);
+    const b = document.getElementById("btnCopy");
+    const old = b.textContent; b.textContent = "已复制 ✓";
+    setTimeout(() => b.textContent = old, 1400);
+  } catch(e){ alert("复制失败，请改用导出 TXT。"); }
+});
+
+document.getElementById("btnClear").addEventListener("click", () => {
+  RESULTS = []; COLLAPSED.clear();
+  document.getElementById("search").value = "";
+  document.getElementById("toolbar").classList.remove("show");
+  document.getElementById("summary").classList.remove("show");
+  render();
+});
+
+/* ---------- filters ---------- */
+updateTarget();
+document.getElementById("search").addEventListener("input", render);
+document.getElementById("filter").addEventListener("change", render);
+
+// The folder button is a child of the dropzone, so stopPropagation here is enough
+// to keep the dropzone's own click handler from also opening the file picker.
+document.getElementById("btnDir").addEventListener("click", e => {
+  e.stopPropagation();
+  dirInput.click();
+});
+</script>
+</body>
+</html>
