@@ -1,0 +1,10 @@
+# 用户自己的东西 —— 绝不入库（也绝不打进安装包）
+proxy/replays/
+proxy/config.json
+proxy/observer.json
+proxy/settings.json
+proxy/_dump_*.log
+
+# 构建产物
+release/
+node_modules/

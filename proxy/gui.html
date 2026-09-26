@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YGO 对话记录</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a23; --panel2:#1e2230; --line:#2a3040;
+    --fg:#e6e9f0; --dim:#8b93a7; --accent:#4a9eff; --ok:#3ecf8e;
+    --warn:#ffb020; --err:#ff5c5c; --tip:#5ad0e0; --srv:#c58fff;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font:14px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+  }
+  .wrap{max-width:1080px; margin:0 auto; padding:28px 20px 80px}
+  h1{font-size:20px; margin:0 0 4px; font-weight:600}
+  .sub{color:var(--dim); font-size:13px; margin-bottom:22px}
+
+  button{
+    background:var(--panel2); color:var(--fg); border:1px solid var(--line);
+    border-radius:7px; padding:7px 13px; font-size:13px; cursor:pointer;
+    font-family:inherit; transition:.12s; white-space:nowrap;
+  }
+  button:hover:not(:disabled){background:#252b3b; border-color:#3a4358}
+  button:disabled{opacity:.4; cursor:not-allowed}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:500}
+  button.primary:hover:not(:disabled){background:#3a8ae8}
+  button.danger{border-color:#4a2020; color:var(--err)}
+  button.danger:hover:not(:disabled){background:#2a1a1a; border-color:#6a2a2a}
+
+  /* tabs */
+  .tabs{
+    display:flex; align-items:center; gap:4px;
+    border-bottom:1px solid var(--line); margin-bottom:20px;
+  }
+  .tab{
+    background:none; border:none; border-bottom:2px solid transparent;
+    border-radius:0; padding:9px 16px; color:var(--dim); font-size:14px;
+  }
+  .tab:hover{background:none; color:var(--fg)}
+  .tab.on{color:var(--fg); border-bottom-color:var(--accent); font-weight:500}
+
+  .panel{
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:16px 18px; margin-bottom:16px;
+  }
+  .panel h2{font-size:14px; margin:0 0 14px; font-weight:600; color:var(--fg)}
+  .panel .hint{color:var(--dim); font-size:12.5px; margin:-8px 0 14px}
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px}
+  .field{display:flex; flex-direction:column; gap:5px}
+  .field label{font-size:12.5px; color:var(--dim)}
+  input[type=text],input[type=number]{
+    background:var(--panel2); border:1px solid var(--line); color:var(--fg);
+    border-radius:7px; padding:7px 11px; font-size:13px; font-family:inherit; width:100%;
+  }
+  input:focus{outline:none; border-color:var(--accent)}
+  input:disabled{opacity:.5; cursor:not-allowed}
+  label.chk{display:flex; align-items:center; gap:6px; font-size:13px; color:var(--dim); cursor:pointer; user-select:none}
+  label.chk input{accent-color:var(--accent); cursor:pointer}
+
+  .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:16px}
+  .grow{flex:1}
+
+  .pill{
+    display:inline-flex; align-items:center; gap:6px; font-size:12.5px;
+    padding:3px 11px; border-radius:20px; border:1px solid var(--line); color:var(--dim);
+  }
+  .pill .dot{width:7px; height:7px; border-radius:50%; background:var(--dim)}
+  .pill.on{color:var(--ok); border-color:#1f4a37}
+  .pill.on .dot{background:var(--ok)}
+  .pill.warn{color:var(--warn); border-color:#4a3c1a}
+  .pill.warn .dot{background:var(--warn)}
+
+  .callout{
+    display:none; background:var(--panel2); border:1px solid var(--line);
+    border-left:3px solid var(--accent); border-radius:8px; padding:11px 14px;
+    font-size:13px; margin-top:14px;
+  }
+  .callout.show{display:block}
+  .callout b{color:var(--accent); font-size:15px; font-family:Consolas,monospace}
+
+  #log{background:#0b0d12; border:1px solid var(--line); border-radius:8px;
+       padding:10px 12px; height:240px; overflow-y:auto;
+       font:12.5px/1.65 Consolas,"Courier New",monospace; white-space:pre-wrap; word-break:break-all}
+  #log .l{color:var(--dim)}
+  #log .l.info{color:var(--fg)}
+  #log .l.warn{color:var(--warn)}
+  #log .l.port{color:var(--accent)}
+  #log .empty{color:#5a6377}
+
+  /* recordings */
+  .rec{
+    display:flex; align-items:center; gap:10px; padding:8px 11px;
+    border:1px solid var(--line); border-radius:7px; margin-bottom:6px; cursor:pointer;
+    font-size:13px; background:var(--panel2); transition:.12s;
+  }
+  .rec:hover{border-color:#3a4358; background:#252b3b}
+  .rec.on{border-color:var(--accent)}
+  .rec .nm{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .rec .sz{color:var(--dim); font-size:12px; font-family:Consolas,monospace}
+  .rec .live{color:var(--ok); font-size:11px; border:1px solid #1f4a37; border-radius:20px; padding:1px 8px}
+  .empty{color:var(--dim); font-size:13px; padding:8px 2px}
+
+  /* chat viewer */
+  .filterbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:12px}
+  input[type=search]{
+    background:var(--panel2); border:1px solid var(--line); color:var(--fg);
+    border-radius:7px; padding:7px 11px; font-size:13px; font-family:inherit; min-width:190px;
+  }
+  input[type=search]:focus{outline:none; border-color:var(--accent)}
+  select{
+    background:var(--panel2); border:1px solid var(--line); color:var(--fg);
+    border-radius:7px; padding:7px 11px; font-size:13px; font-family:inherit;
+  }
+  select:focus{outline:none; border-color:var(--accent)}
+  #chats{max-height:520px; overflow-y:auto}
+  .msg{display:flex; gap:10px; padding:5px 0; border-bottom:1px solid #1d2130; font-size:13px}
+  .msg:last-child{border-bottom:none}
+  .who{
+    flex-shrink:0; width:104px; text-align:right; font-size:12px; padding-top:1px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .who.player{color:var(--accent)}
+  .who.observer{color:var(--warn)}
+  .who.tip{color:var(--tip)}
+  .who.server{color:var(--srv)}
+  .who.sys{color:var(--dim)}
+  .txt{flex:1; word-break:break-word; white-space:pre-wrap}
+  mark{background:#4a3c1a; color:#ffd77a; border-radius:2px}
+
+  .bar{
+    display:flex; gap:18px; align-items:center; flex-wrap:wrap;
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:11px 16px; margin-bottom:16px; font-size:12.5px; color:var(--dim);
+  }
+  .bar b{color:var(--fg); font-size:17px; font-weight:600; display:block; line-height:1.3}
+
+  #banner{
+    display:none; background:var(--panel2); border:1px solid var(--line);
+    border-left:3px solid var(--err); border-radius:8px; padding:11px 14px;
+    font-size:13px; margin-bottom:16px;
+  }
+  #banner.show{display:block}
+  .hidden{display:none !important}
+
+  /* 上传与导出 */
+  #drop{
+    border:1.5px dashed var(--line); border-radius:9px; padding:12px 14px;
+    text-align:center; font-size:12.5px; color:var(--dim); margin-bottom:12px;
+    transition:.12s;
+  }
+  #drop.over{border-color:var(--accent); background:#1a2233}
+  #drop b{color:var(--fg)}
+  .selbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:10px}
+  .selbar .count{color:var(--dim); font-size:12.5px}
+  #exp-target{color:var(--dim); font-size:12px}
+  /* 录像目录：路径可能很长（D:\某层\某层\录像），截断显示，完整路径在 title 里。
+     写不进去的时候标红 —— 否则用户录一晚上才发现什么都没录上。 */
+  #rec-target{
+    color:var(--dim); font-size:12px; max-width:320px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  #rec-target.bad{color:var(--warn)}
+  .rec input[type=checkbox]{accent-color:var(--accent); cursor:pointer; flex-shrink:0; margin:0}
+  .rec .local{color:var(--tip); font-size:11px; border:1px solid #1d4750; border-radius:20px; padding:1px 8px}
+
+  /* 导出完成提示 */
+  #toast{
+    position:fixed; right:20px; bottom:20px; z-index:999; width:min(400px,calc(100vw - 40px));
+    background:var(--panel2); border:1px solid var(--line); border-left:3px solid var(--ok);
+    border-radius:10px; padding:13px 16px 13px 15px; font-size:13px;
+    box-shadow:0 10px 32px rgba(0,0,0,.55);
+    opacity:0; transform:translateY(14px); pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease;
+  }
+  #toast.show{opacity:1; transform:translateY(0); pointer-events:auto}
+  #toast .t-head{display:flex; align-items:center; gap:8px; font-weight:600; margin-bottom:6px}
+  #toast .tick{color:var(--ok)}
+  #toast .t-close{
+    margin-left:auto; background:none; border:none; color:var(--dim); cursor:pointer;
+    font-size:15px; line-height:1; padding:2px 4px; border-radius:4px;
+  }
+  #toast .t-close:hover{background:#2b3242; color:var(--fg)}
+  #toast .t-dest{color:var(--dim); font-size:12px; margin-bottom:7px}
+  #toast .t-files{
+    font-family:Consolas,"Courier New",monospace; font-size:11.5px; color:var(--dim);
+    max-height:120px; overflow-y:auto; line-height:1.65; word-break:break-all;
+    border-top:1px solid var(--line); padding-top:7px;
+  }
+  #toast .t-files .t-open{
+    background:none; border:none; padding:0; cursor:pointer; font:inherit;
+    color:var(--accent); text-decoration:underline; text-underline-offset:2px;
+  }
+  #toast .t-files .t-open:hover{color:#7cc4ff}
+  #toast .t-hint{color:#5a6377; font-size:11px; margin-top:6px}
+  #toast .t-more{color:var(--warn); font-size:11.5px; margin-top:5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>YGO 对话记录</h1>
+  <div class="sub">记录 ygopro 对局中的消息。</div>
+
+  <div id="banner"></div>
+
+  <div class="tabs">
+    <button class="tab on" data-tab="observer">观战记录</button>
+    <!-- 「自己打牌（代理）」这一页的入口**按需求藏起来了**（2026-09-25）。
+         藏的是界面上这个页签，功能本身一行没动 —— proxy.js、它的接线、
+         下面 #tab-proxy 那一节都还在，把 hidden 去掉就原样放出来。 -->
+    <button class="tab hidden" data-tab="proxy">自己打牌（代理）</button>
+    <!-- 这里原来有个「退出界面」按钮，2026-09-26 拿掉了：点了之后 App 确实退了，
+         但**再进来必崩**，而且它本身就是多余的 —— 关窗口右下角那个 × 是同一件事，
+         main.js 的 win.on("close") 走的是同一个 confirmQuit（正在录的时候
+         照样弹确认框），关窗口还会把后台的 Node 子进程一起收掉。
+         安卓版共用这个文件，那边的退出是返回手势，也不需要这个按钮。 -->
+  </div>
+
+  <!-- ============ 观战 ============ -->
+  <section id="tab-observer">
+    <div class="panel">
+      <h2>观战设置</h2>
+      <div class="hint">填好点「开始记录」，自动记录对话。</div>
+      <div class="grid">
+        <div class="field">
+          <label>服务器地址</label>
+          <input type="text" id="o-host" placeholder="example.com" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>端口</label>
+          <input type="number" id="o-port" min="1" max="65535" placeholder="888">
+        </div>
+        <div class="field">
+          <label>房间名（要和客户端里填的完全一致）</label>
+          <input type="text" id="o-room" placeholder="朋友的房" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>观战用的昵称</label>
+          <input type="text" id="o-name" placeholder="观战记录" autocomplete="off">
+        </div>
+      </div>
+      <div class="row">
+        <button class="primary" id="o-start">开始记录</button>
+        <button class="danger" id="o-stop" disabled>停止</button>
+        <span class="pill" id="o-pill"><span class="dot"></span><span>未运行</span></span>
+        <span class="grow"></span>
+        <label class="chk" title="把收到的每个包倒进 replays/_dump_*.log，连不上时用来诊断">
+          <input type="checkbox" id="o-dump"> 诊断模式
+        </label>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>实时日志</h2>
+      <div id="log"></div>
+    </div>
+  </section>
+
+  <!-- ============ 代理 ============ -->
+  <section id="tab-proxy" class="hidden">
+    <div class="panel">
+      <h2>代理设置</h2>
+      <div class="hint">
+        自己打牌时用。启动后把客户端服务器地址改成 <b>127.0.0.1</b>。
+      </div>
+      <div class="grid">
+        <div class="field">
+          <label>第三方服务器地址</label>
+          <input type="text" id="p-host" placeholder="example.com" autocomplete="off">
+        </div>
+        <div class="field">
+          <label>第三方服务器端口</label>
+          <input type="number" id="p-rport" min="1" max="65535" placeholder="888">
+        </div>
+        <div class="field">
+          <label>本机监听端口（客户端填这个）</label>
+          <input type="number" id="p-lport" min="1" max="65535" placeholder="888">
+        </div>
+      </div>
+      <div class="row">
+        <button class="primary" id="p-start">启动代理</button>
+        <button class="danger" id="p-stop" disabled>停止</button>
+        <span class="pill" id="p-pill"><span class="dot"></span><span>未运行</span></span>
+        <span class="grow"></span>
+        <label class="chk" title="把收到的每个包倒进 replays/_dump_*.log，连不上时用来诊断">
+          <input type="checkbox" id="p-dump"> 诊断模式
+        </label>
+      </div>
+      <div class="callout" id="p-callout">
+        打开 ygopro，服务器填 <b>127.0.0.1</b>，端口填 <b id="p-port">?</b>，正常打牌。
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>实时日志</h2>
+      <div id="log-p"></div>
+    </div>
+  </section>
+
+  <!-- ============ 录像 + 对话 ============ -->
+  <div class="bar" id="bar">
+    <div><b id="n-rec">0</b> 个录像文件</div>
+    <div><b id="n-msg">0</b> 条对话</div>
+    <span class="grow"></span>
+    <span id="rec-target">录像存到：…</span>
+    <button id="reveal">📁 打开录像文件夹</button>
+    <button id="rec-dir">更改…</button>
+    <button id="rec-reset" class="hidden">恢复默认</button>
+  </div>
+
+  <div class="panel">
+    <h2>录像</h2>
+    <div id="drop">
+      把 <b>.yrp3d</b> 文件或整个文件夹拖到这里 —— 也可以
+      <button id="pick-files">选择文件…</button>
+      <button id="pick-dir">选择文件夹…</button>
+      <button id="pick-clear-local" class="hidden" title="只清掉列表里这些临时条目。已经存进录像目录的副本不会被删 —— 那些是真实文件。">清空拖入的文件</button>
+    </div>
+    <div class="selbar">
+      <button id="sel-all">全选</button>
+      <button id="sel-none">全不选</button>
+      <span class="count" id="sel-count">一个都没勾</span>
+      <span class="grow"></span>
+      <label class="chk" title="游戏提示、系统公告这类不算人说的话">
+        <input type="checkbox" id="strip-sys"> 排除系统消息
+      </label>
+      <label class="chk" title="观战者说的话（含具名观战和服务器消息）">
+        <input type="checkbox" id="strip-obs"> 排除观战发言
+      </label>
+      <button id="exp-txt" disabled>合并 TXT</button>
+      <button id="exp-each" disabled>分文件 TXT</button>
+      <button id="exp-json" disabled>JSON</button>
+      <button id="exp-csv" disabled>CSV</button>
+      <button id="exp-copy" disabled>复制全部</button>
+    </div>
+    <div class="selbar">
+      <button id="exp-dir">📁 导出目录…</button>
+      <span id="exp-target">导出到：浏览器下载目录</span>
+    </div>
+    <div id="recs"><div class="empty">还没有录像。</div></div>
+    <!-- 分页。只有一页的时候整块藏起来（updatePager），
+         别让屏幕上多一条什么也做不了的工具栏。
+         上一页/下一页而不是页码按钮：手机上页码会折行，而且每个都得瞄准点。 -->
+    <div class="selbar hidden" id="pager">
+      <button id="pg-prev">‹ 上一页</button>
+      <span class="count" id="pg-info">第 1 / 1 页</span>
+      <button id="pg-next">下一页 ›</button>
+    </div>
+    <input type="file" id="file-input" class="hidden" multiple accept=".yrp3d,.yrp">
+    <input type="file" id="dir-input" class="hidden" webkitdirectory>
+  </div>
+
+  <div class="panel">
+    <h2 id="view-title">对话</h2>
+    <div class="filterbar">
+      <input type="search" id="q" placeholder="搜索对话内容…">
+      <select id="filt">
+        <option value="all">全部消息</option>
+        <option value="player">只看玩家发言</option>
+        <option value="observer">只看观战发言</option>
+        <option value="nosys">排除系统消息</option>
+      </select>
+      <span class="grow"></span>
+      <span class="empty" id="view-note"></span>
+    </div>
+    <div id="chats"><div class="empty">还没选录像。</div></div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* 通信层：所有请求都走 preload 开出来的那一个口子。
+   没有 HTTP 服务、没有 token、没有端口 —— 这个页面和干活的那半边在同一个
+   进程树里，通道名就是全部协议（见 main.js 里那张 handler 表）。 */
+
+/* ---------- 小工具 ---------- */
+const $ = (id) => document.getElementById(id);
+
+function el(tag, cls, text){
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  // 一律 textContent —— 对话内容来自别的玩家，绝不能进 innerHTML。
+  // 这个页面握着 API token，能改服务器地址、能起进程。
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function fmtSize(n){
+  if (n < 1024) return n + " B";
+  if (n < 1024*1024) return (n/1024).toFixed(1) + " KB";
+  return (n/1024/1024).toFixed(1) + " MB";
+}
+
+/* 名字保留 post 只是省得改十几处调用点：现在不管是「取」还是「改」都是
+   同一个口子。失败一律是 {ok:false, error}，不抛异常 —— 调用方照旧看 r.ok。 */
+async function post(ch, args){
+  return window.yrp.invoke(ch, args);
+}
+
+/* ---------- 状态 ---------- */
+/* 录像有两种来源，列表里同一个槽位混着显示，所以用带前缀的 key 区分：
+     "s:文件名"        —— 服务器 replays/ 目录里的
+     "u:3:文件名"      —— 用户拖进来/选进来的，只活在这一页的内存里
+   本地上传不能用 "u:文件名"：两个不同文件夹里的同名文件会撞成一个。
+
+   导入的那些还会在录像目录里**存一份真文件**（见 addLocalFiles），所以同一条录像
+   会同时以 "u:" 和 "s:" 出现 —— savedAs 记着宿主实际落盘的名字，列表靠它把磁盘
+   那份藏起来，只显示「本机」这条。 */
+const S = {
+  running: {proxy:false, observer:false},
+  tab: "observer",
+  sel: null,          // 选中的那个 key
+  follow: true,       // 自动跟着最新那个文件走
+  data: null,         // 选中的录像解析结果
+  version: null,      // 房间协议版本，服务端学到的那个
+  q: "",
+  filt: "all",
+  srv: [],            // /api/recordings 的列表
+  anyRunning: false,  // 正在录的话，列表第一个是「录制中」
+  local: new Map(),   // key -> {name, result, savedAs}，本地上传的录像（解析结果在内存里）
+  localSeq: 0,        // key 里那个自增序号，只增不减
+  picked: new Set(),  // 勾了要导出的 key
+  exporting: false,   // 导出进行中：这期间工具栏全禁用
+  page: 1             // 录像列表当前在第几页（页数由 pageMeta 夹出来）
+};
+
+/* ---------- 日志 ---------- */
+const logs = {observer: $("log"), proxy: $("log-p")};
+
+function pushLog(ev){
+  const box = logs[ev.mode] || logs.observer;
+  const empty = box.querySelector(".empty");
+  if (empty) empty.remove();
+  const atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 30;
+  const line = el("div", "l " + (ev.kind || "raw"), ev.text);
+  box.appendChild(line);
+  while (box.childElementCount > 800) box.removeChild(box.firstChild);
+  if (atBottom) box.scrollTop = box.scrollHeight;
+
+  if (ev.kind === "port"){
+    $("p-port").textContent = ev.port;
+    $("p-callout").classList.add("show");
+  }
+}
+
+function clearLog(mode){
+  const box = logs[mode];
+  box.replaceChildren(el("div", "empty", "等待输出…"));
+}
+
+/* ---------- 子进程日志 ---------- *
+ * 同一个进程里推过来的，不会断线，所以没有「重连」「补发」「连接断了」那几套。
+ * 真丢日志只有一种情况：这个页面自己 reload 了（Ctrl+R），由 init() 用
+ * log:backlog 灌回来。 */
+let offEvents = null;
+function onEvent(ev){
+  if (ev.t === "log") pushLog(ev);
+  else if (ev.t === "proc") setRunning(ev.mode, ev.running);
+}
+
+function connect(){
+  if (offEvents) offEvents();
+  offEvents = window.yrp.on("yrp:event", onEvent);
+}
+
+/* ---------- 运行状态 ---------- */
+function setRunning(mode, on){
+  const was = S.running[mode];
+  S.running[mode] = on;
+  const pill = mode === "observer" ? $("o-pill") : $("p-pill");
+  pill.className = "pill" + (on ? " on" : "");
+  pill.lastElementChild.textContent = on ? "记录中" : "未运行";
+
+  $(mode === "observer" ? "o-start" : "p-start").disabled = on;
+  $(mode === "observer" ? "o-stop" : "p-stop").disabled = !on;
+  // 运行中禁用表单：子进程学到新版本号会自己改写 observer.json，
+  // 界面的缓存值不能覆盖回去
+  for (const id of mode === "observer"
+      ? ["o-host","o-port","o-room","o-name"]
+      : ["p-host","p-rport","p-lport"])
+    $(id).disabled = on;
+
+  refreshRecordings();
+  // 观察者第一次连错版本会自己改 observer.json，停了之后要把它学到的读回来。
+  // 停在运行中的话会覆盖用户正在编辑的内容，所以只在刚停下时读。
+  if (was && !on) loadConfig().catch(() => {});
+}
+
+/* ---------- 表单 ---------- */
+async function loadConfig(){
+  const r = await post("config:get");
+  if (!r.ok) throw new Error(r.error || "配置读不出来");
+  const o = r.observer, p = r.proxy;
+  // 端口这里**不要**再写死数字：服务器已经把它和默认值合并好了，
+  // 界面上再兜一个 7911 就会出现「界面显示 7911、子进程其实连 888」。
+  if (o){
+    $("o-host").value = o.host || "";
+    $("o-port").value = o.port || "";
+    $("o-room").value = o.room || "";
+    $("o-name").value = o.name || "";
+    // 版本号不放在界面上：第一次连错了它会自己学，学到的值回写在
+    // observer.json 里。这里读出来只为原样传回去，别把学到的覆盖成默认值。
+    S.version = o.version;
+  }
+  if (p){
+    $("p-host").value = p.remoteHost || "";
+    $("p-rport").value = p.remotePort || "";
+    $("p-lport").value = p.listenPort || "";
+  }
+}
+
+function observerForm(){
+  return {
+    host: $("o-host").value.trim(),
+    port: Number($("o-port").value),
+    room: $("o-room").value.trim(),
+    name: $("o-name").value.trim() || "观战记录"
+  };
+}
+function proxyForm(){
+  return {
+    remoteHost: $("p-host").value.trim(),
+    remotePort: Number($("p-rport").value),
+    listenPort: Number($("p-lport").value)
+  };
+}
+
+function banner(msg){
+  const b = $("banner");
+  if (!msg){ b.classList.remove("show"); return; }
+  b.replaceChildren(el("div", null, msg));
+  b.classList.add("show");
+}
+
+async function start(mode){
+  const f = mode === "observer" ? observerForm() : proxyForm();
+  if (mode === "observer" && !f.room) return banner("房间名要填上。");
+  if (mode === "proxy" && !f.remoteHost) return banner("服务器地址要填上。");
+  banner("");
+
+  // 版本号原样带上：它是上次学到的，不传就会退回默认值、白学一遍
+  const cfg = mode === "observer" && S.version != null ? { ...f, version: S.version } : f;
+  const r = await post("proc:start", {
+    mode, cfg, dump: $(mode === "observer" ? "o-dump" : "p-dump").checked
+  });
+  if (!r.ok) return banner(r.error);
+  if (r.warn && r.warn.length) banner(r.warn.join(" "));
+  clearLog(mode);
+  pushLog({mode, kind:"info", text:"正在启动…"});
+}
+
+async function stop(mode){
+  const r = await post("proc:stop", { mode });
+  if (!r.ok) banner(r.error);
+}
+
+/* ---------- 录像列表 ---------- */
+
+/* 分页：只影响「看见多少」，不影响「有什么」。列表数据一直是全量 ——
+ * recordings:list 返回的就是 readdir 的全部结果，一条只有 {name,size,mtime}，
+ * 几千条也无所谓。所以**服务端不加 limit/offset**：那要同时改两个后端
+ * （electron 的 api.js 和主分支的 gui.js）加两个路由，换来的是零收益。 */
+const PER_PAGE = 10;
+
+/* 把页码夹进合法范围，并算出这一页该渲染 rows 的哪一段。
+ *
+ * **每次渲染前都要夹**：录像会增删，用户停在第 7 页的时候文件可能只剩 3 页的量，
+ * 不夹就会渲染出一片空白（而 #n-rec 还在说「有 25 个」），而且分页控件上的页码
+ * 会和实际画出来的那一页对不上。
+ *
+ * 越界夹到**末页**而不是跳回第 1 页：删掉的通常是旧文件，删完停在原地接着看
+ * 比被弹回开头舒服。总数是 0 的时候 pages 也是 1，这样控件只需要处理
+ * 「一页以上才显示」这一种情况。 */
+function pageMeta(total, page, per){
+  const pages = Math.max(1, Math.ceil(total / per));
+  const p = Math.min(Math.max(1, Math.trunc(Number(page)) || 1), pages);
+  const from = (p - 1) * per;
+  return { page: p, pages, from, to: Math.min(from + per, total) };
+}
+
+async function refreshRecordings(){
+  let r;
+  try { r = await post("recordings:list"); } catch (_) { return; }
+  if (!r.ok) return;
+  S.srv = r.list;
+  S.anyRunning = !!r.anyRunning;
+
+  // 服务器上的文件被删了、本地的清掉了，勾选里别留着已经没了的东西，
+  // 否则「已勾 3 个」会导出来 2 个。
+  // 已经存进录像目录的导入文件，它磁盘那一份在列表里是**看不见**的（renderRecs
+  // 藏掉了），所以也不算「还在」—— 藏起来的行点不到，勾着它只会莫名其妙地导出。
+  const saved = savedNames();
+  const live = new Set([
+    ...S.local.keys(),
+    ...r.list.filter((f) => !saved.has(f.name)).map((f) => "s:" + f.name)
+  ]);
+  for (const k of [...S.picked]) if (!live.has(k)) S.picked.delete(k);
+
+  renderRecs();
+
+  // 正在录的时候跟着最新的走，不用手动点。
+  // ⚠️ 盯的必须是**第一条看得见的**服务器录像，不能是 list[0]：录制进行中导入一个
+  // 录像时，刚写进去的副本 mtime 最新会排到 list[0]，而它正好是被藏掉的那条 ——
+  // 用 list[0] 的话界面会「自动选中」一条用户根本看不见的条目。
+  const first = r.list.find((f) => !saved.has(f.name));
+  const top = "s:" + (first ? first.name : "");
+  if (r.anyRunning && first && S.sel !== top){
+    if (S.sel === null || S.follow !== false){
+      // 最新的那个永远在第 1 页。翻回第 1 页再画一遍 —— 选中一个当前页看不见的
+      // 东西等于没选中（右边会显示对话，但列表里没有那一行是亮的）。
+      // 先 renderRecs 再 select：markSelected 是扫已经画出来的 .rec 打高亮的。
+      S.page = 1;
+      renderRecs();
+      select(top, true);
+    }
+  }
+}
+
+function renderRecs(){
+  const box = $("recs");
+  box.replaceChildren();
+
+  // 本地拖进来的排在最前面，最新的在上 —— 刚拖完就能看见
+  const rows = [];
+  for (const [key, v] of [...S.local.entries()].reverse())
+    rows.push({key, name:v.name, size:v.result.size, live:false, local:true});
+
+  // 已经存进录像目录的那些，磁盘上那份**藏起来** —— 同一局录像只该出现一次，
+  // 用户看到的是内存里这条（切换更快，「本机文件，没上传」那句说明也才是对的）。
+  const saved = savedNames();
+  const srv = S.srv.filter((f) => !saved.has(f.name));
+  // 「录制中」标在第一条**看得见**的服务器录像上：正在录的那条永远是 mtime 最新的，
+  // 但刚导入的副本可能比它还新，而那条是藏起来的 —— 直接用 S.srv[0] 会标到看不见的行上。
+  const liveTop = srv[0];
+  for (const f of srv)
+    rows.push({
+      key: "s:" + f.name, name: f.name, size: f.size, local: false,
+      live: S.anyRunning && f === liveTop
+    });
+
+  // 计数用 rows.length，不能用 S.srv.length + S.local.size —— 藏掉的那些在两边
+  // 各算了一次。所以它必须**在 rows 建好之后**再设。
+  $("n-rec").textContent = rows.length;
+
+  // 只画当前这一页。切之前先夹一次页码，并把夹过的值写回 S ——
+  // 不写回的话控件上会显示「第 7 页」而屏幕上画的是第 3 页的片子。
+  const m = pageMeta(rows.length, S.page, PER_PAGE);
+  S.page = m.page;
+
+  if (!rows.length){
+    box.appendChild(el("div", "empty", "还没有录像。点上面的「开始记录」，或者把 .yrp3d 拖进来。"));
+  }
+
+  for (const r of rows.slice(m.from, m.to)){
+    const row = el("div", "rec" + (S.sel === r.key ? " on" : ""));
+    row.dataset.key = r.key;
+
+    const cb = el("input");
+    cb.type = "checkbox";
+    cb.checked = S.picked.has(r.key);
+    cb.title = "勾上之后可以一起导出";
+    // 绑 click 而不是 change，并且必须拦下来：行上的 onclick 是 select()，
+    // 让它冒泡过去会把 S.follow 关掉、右边视图跟着跳
+    cb.onclick = (e) => {
+      e.stopPropagation();
+      if (cb.checked) S.picked.add(r.key); else S.picked.delete(r.key);
+      updateSelBar();
+    };
+    row.appendChild(cb);
+
+    row.appendChild(el("div", "nm", r.name));
+    if (r.local) row.appendChild(el("span", "local", "本机"));
+    if (r.live) row.appendChild(el("span", "live", "录制中"));
+    row.appendChild(el("div", "sz", fmtSize(r.size)));
+    row.onclick = () => select(r.key);
+    box.appendChild(row);
+  }
+
+  updatePager(m);
+  updateSelBar();
+}
+
+/* 页码控件。一页装得下就整块藏起来 —— 没得翻的时候那一行纯粹是占地方。 */
+function updatePager(m){
+  $("pager").classList.toggle("hidden", m.pages <= 1);
+  $("pg-info").textContent = `第 ${m.page} / ${m.pages} 页`;
+  $("pg-prev").disabled = m.page <= 1;
+  $("pg-next").disabled = m.page >= m.pages;
+}
+
+/* 一个 key 对应的人在界面上显示成什么名字 */
+function keyName(key){
+  const v = S.local.get(key);
+  if (v) return v.name;
+  return key.startsWith("s:") ? key.slice(2) : key;
+}
+
+/* ---------- 对话查看 ---------- */
+async function select(key, auto){
+  S.sel = key;
+  if (!auto) S.follow = false;
+  markSelected();
+
+  const mine = S.local.get(key);
+  const r = mine ? mine.result
+    : await post("recording:parse", { name: keyName(key) });
+  S.data = r;
+
+  const name = keyName(key);
+  if (!r.ok){
+    $("view-title").textContent = name;
+    $("view-note").textContent = "";
+    $("chats").replaceChildren(el("div", "empty", r.error));
+    $("n-msg").textContent = 0;
+    return;
+  }
+
+  $("view-title").textContent = "对话 · " + name;
+  const bits = [];
+  // 导入的文件现在会在录像目录里存一份，所以「只在这个页面里」那句有个前提：
+  // 存成功了就不能再那么说 —— 它会变成一句假话。
+  if (mine) bits.push(mine.savedAs
+    ? "已存进录像目录：" + mine.savedAs
+    : "本机文件，只在这个页面里，没上传");
+  if (r.running) bits.push("录制中，下面是已经录到的");
+  if (r.trimmed) bits.push(`尾部有半个包没写完，已按 ${fmtSize(r.parsedSize)} 解析`);
+  $("view-note").textContent = bits.join(" · ");
+
+  render();
+}
+
+function markSelected(){
+  document.querySelectorAll(".rec").forEach((e) =>
+    e.classList.toggle("on", e.dataset.key === S.sel));
+}
+
+// 解析块没加载成功时「排除系统消息」也得能用 —— 这条兜底和块里 isSystem()
+// 的判定保持一致，改了那边记得改这里
+function isSysKind(kind){
+  return YRP ? YRP.isSystem(kind) : (kind === "tip" || kind === "server");
+}
+
+function match(m){
+  const q = S.q.trim().toLowerCase();
+  if (q && !m.msg.toLowerCase().includes(q)) return false;
+  if (S.filt === "player") return m.kind === "player";
+  if (S.filt === "observer") return m.kind === "observer";
+  if (S.filt === "nosys") return !isSysKind(m.kind);
+  return true;
+}
+
+function render(){
+  const box = $("chats");
+  box.replaceChildren();
+  if (!S.data || !S.data.ok) return;
+
+  const rows = S.data.chats.filter(match);
+  $("n-msg").textContent = rows.length;
+
+  if (!S.data.chats.length){
+    box.appendChild(el("div", "empty", "这个录像里没有任何对话。"));
+    return;
+  }
+  if (!rows.length){
+    box.appendChild(el("div", "empty",
+      `${S.data.chats.length} 条对话都被当前筛选条件隐藏了。`));
+    return;
+  }
+
+  const q = S.q.trim();
+  for (const m of rows){
+    const row = el("div", "msg");
+    row.appendChild(el("div", "who " + m.kind, m.who));
+    const txt = el("div", "txt");
+    if (q){
+      // 只有这里碰 innerHTML，而且两边都过了 esc()：先转义全文，
+      // 再在转义结果里高亮 —— 玩家的发言永远不会变成标签
+      const low = m.msg.toLowerCase(), lq = q.toLowerCase();
+      let out = "", i = 0;
+      for (;;){
+        const at = low.indexOf(lq, i);
+        if (at < 0){ out += esc(m.msg.slice(i)); break; }
+        out += esc(m.msg.slice(i, at)) + "<mark>" + esc(m.msg.slice(at, at + q.length)) + "</mark>";
+        i = at + q.length;
+      }
+      txt.innerHTML = out;
+    } else {
+      txt.textContent = m.msg;
+    }
+    row.appendChild(txt);
+    box.appendChild(row);
+  }
+}
+
+function esc(s){
+  return s.replace(/[&<>"']/g, (c) =>
+    ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* ---------- 解析块（上传/导出用）----------
+   同一份代码在 chat-extractor.html 里也跑着。主进程把 @parser 哨兵块原样发过来，
+   这里 new Function 跑一遍 —— 块末尾那句就是 `window.YRP_PARSER = (function(){...})();`，
+   本来就设计成能独立执行。
+
+   为什么不走 <script src>：打包之后没有 HTTP 服务，也没有磁盘上的 parser.js。
+   为什么不用 webContents.executeJavaScript（考虑过，否决）：挂在 did-finish-load 上时
+   和这里的 await 有竞态，修竞态得靠轮询或事件缓冲。一次性要过来是确定性的，
+   没有时序依赖，也没有「隔离世界 vs 主世界」那一类坑。 */
+let YRP = null;
+const parserReady = (async () => {
+  const r = await post("parser:get");                 // {ok:true, source} | {ok:false, error}
+  if (!r.ok) return r.error;
+  try { new Function(r.source)(); }                   // 挂上 window.YRP_PARSER
+  catch (err) { return "解析脚本执行失败：" + err.message; }
+  if (!window.YRP_PARSER || typeof window.YRP_PARSER.extract !== "function")
+    return "解析脚本加载了，但没导出 extract（chat-extractor.html 的哨兵块可能被改坏了）";
+  YRP = window.YRP_PARSER;
+  return null;
+})();
+
+/* ---------- 拖入 / 选择本机录像 ---------- */
+const YRP3D = /\.(yrp3d|yrp)$/i;
+// 只有 .yrp3d 会被存进录像目录：后端的 safeName 和 recordings:list 都只认它，
+// .yrp 存了也不会出现在列表里（它本来也不含对话）。这个常量和宿主那边是一对，
+// 这里那份只为提前给一句人话，真正把关的是宿主。
+const SAVE_RE = /\.yrp3d$/i;
+const IMPORT_MAX = 8 * 1024 * 1024;
+
+/* 往桥上过二进制只能编成 base64（安卓那条桥只能过 JSON，主分支那条是 JSON 请求体）。
+   一次 String.fromCharCode.apply 塞太多实参会炸栈，所以按 32 KB 一段拼成「二进制
+   字符串」，最后**只调一次 btoa** —— 不能在循环里逐段 btoa，那样每段各自补位，
+   段与段之间会错位（32768 不是 3 的倍数）。 */
+const B64_CHUNK = 32768;
+function b64Of(bytes){
+  let s = "";
+  for (let i = 0; i < bytes.length; i += B64_CHUNK)
+    s += String.fromCharCode.apply(null, bytes.subarray(i, i + B64_CHUNK));
+  return btoa(s);
+}
+
+/* 落盘前把文件名洗一遍。安卓的 File.name 来自系统的 DISPLAY_NAME，个别来源
+   （云盘、微信）会给空名或者带 ASCII 冒号的名字，而宿主那边 safeName 见到
+   `:` `/` `\` 一律拒 —— 不洗的话这功能在安卓上会大概率「文件名不合法」。
+   正则和 proxy.js 洗房间名那行是同一套。
+   ⚠️ 全角「：」不许动：真实录像名就是 09-25「16：23：49」.yrp3d 这种。 */
+function importName(name){
+  return String(name || "").replace(/[\\/:*?"<>|]/g, "_").trim();
+}
+
+/* 已经存进录像目录的导入文件，它们的**磁盘副本要藏起来** —— 同一局录像只该出现
+   一次。名字用宿主实际写进去的那个：重名时它被改成了 "xxx_2.yrp3d"。
+   每次现算，而不是往 S 上挂一个只增不减的 Set —— 清了导入条目之后磁盘那份就该
+   重新露出来，它是个真实文件，不是该被永久藏掉的东西。 */
+function savedNames(){
+  const s = new Set();
+  for (const v of S.local.values()) if (v.savedAs) s.add(v.savedAs);
+  return s;
+}
+
+/* 把导入的录像往录像目录存一份。返回的 saved[].i / failed[].i 是**入参下标**，
+   调用方照它把结果对回自己那份条目上 —— 同批里有同名文件时靠名字对不回去。 */
+async function saveCopies(items){
+  return await post("recordings:import", {
+    files: items.map((it) => ({
+      name: importName(it.name), data: b64Of(it.bytes), mtime: it.mtime
+    }))
+  });
+}
+
+async function addLocalFiles(files){
+  const list = [...files].filter((f) => YRP3D.test(f.name));
+  if (!list.length){
+    if (files.length) banner("这些文件里没有 .yrp3d 录像（只认 .yrp3d 和 .yrp）。");
+    return;
+  }
+  const why = await parserReady;
+  if (why) return banner("上传的文件解析不了：" + why);
+  banner("");
+
+  const pending = [];   // 够格存盘的：{name, bytes, mtime}
+  const keys = [];      // pending[n] 对应 S.local 里哪个 key
+  for (const f of list){
+    const key = "u:" + S.localSeq++ + ":" + f.name;
+    let result, bytes = null;
+    try {
+      // 字节这次要留着 —— 存一份到录像目录要用。extract 不持有入参，所以这之后
+      // 我们是唯一的持有者，存完就随 S.local 一起被回收。
+      bytes = new Uint8Array(await f.arrayBuffer());
+      result = YRP.extract(f.name, bytes);
+    } catch (err){
+      result = { ok:false, file:f.name, size:0, error:"读取失败：" + err.message };
+    }
+    S.local.set(key, { name:f.name, result, savedAs:null });
+    if (result.ok && bytes && SAVE_RE.test(importName(f.name)) && bytes.length <= IMPORT_MAX){
+      keys.push(key);
+      pending.push({ name:f.name, bytes, mtime:f.lastModified });
+    }
+  }
+
+  // 存不进去只是**退回今天的行为**：录像照样能看，只是重开就没了。
+  // 绝不能因为磁盘写不进去就让整个导入失败。
+  if (pending.length){
+    try {
+      const r = await saveCopies(pending);
+      if (r && r.ok){
+        // 宿主回传的名字可能和原文件名不同（重名被改成了 xxx_2），必须用它
+        for (const s of r.saved){
+          const e = S.local.get(keys[s.i]);
+          if (e) e.savedAs = s.name;
+        }
+        if (r.failed.length){
+          banner(`有 ${r.failed.length} 个没能存进录像目录，只留在这个页面里：${r.failed[0].error}`);
+        }
+      } else {
+        banner("没能存进录像目录（录像还是能看的）：" + ((r && r.error) || "未知原因"));
+      }
+    } catch (err){
+      banner("没能存进录像目录（录像还是能看的）：" + err.message);
+    }
+    // 磁盘上已经有它们了，刷一遍让列表知道 —— 然后它们会被上面那套藏掉，
+    // 列表里留下的只有「本机」这条。
+    await refreshRecordings();
+  }
+
+  renderRecs();
+  // 拖进来就是想看，直接跳到最后一个（也就是刚加的那个）
+  const last = [...S.local.keys()].pop();
+  if (S.local.get(last) && S.local.get(last).result.ok) select(last);
+}
+
+/* 「清空拖入的文件」。**只清内存里这些条目，绝不碰磁盘** —— 导入的时候已经在录像
+   目录里存了一份，清完之后那份会以普通录像的形态重新出现在列表里（不再被
+   savedNames 藏掉）。这是诚实的：它们是真文件。
+
+   ⚠️ 绝不能顺手把磁盘副本也删了：重启之后根本分不出哪些是导入的、哪些是用户自己
+   录的，一删就会连真实录像一起删。 */
+function clearLocal(){
+  S.local.clear();
+  for (const k of [...S.picked]) if (k.startsWith("u:")) S.picked.delete(k);
+  if (S.sel && S.sel.startsWith("u:")) S.sel = null;
+  renderRecs();
+}
+
+/* ---------- 导出 ---------- */
+// 用户选的导出目录。**值由主进程发下来**，这边只是个显示用的副本 ——
+// 写盘的时候主进程只认自己发出去过的目录，页面说往哪儿写不算数。
+let exportDir = null;
+
+function exportOpt(){
+  return { strip: $("strip-sys").checked, noObs: $("strip-obs").checked };
+}
+
+function updateSelBar(){
+  const n = S.picked.size;
+  $("sel-count").textContent = n ? `已勾 ${n} 个` : "一个都没勾";
+  $("pick-clear-local").classList.toggle("hidden", !S.local.size);
+  const off = S.exporting || !n || !YRP;
+  for (const id of ["exp-txt","exp-each","exp-json","exp-csv","exp-copy"])
+    $(id).disabled = off;
+}
+
+function dirLabel(){
+  if (!exportDir) return "";
+  const s = exportDir.replace(/[\\/]+$/, "");
+  return s.split(/[\\/]/).pop() || exportDir;
+}
+
+function updateTarget(){
+  const t = $("exp-target");
+  t.textContent = exportDir
+    ? "导出到：" + dirLabel() + "\\"
+    : "导出到：下载文件夹（点左边可以改）";
+  // 只显示最后一段，但鼠标停上去能看到完整路径 —— 选了个多层目录时才分得清
+  t.title = exportDir || "";
+}
+
+function destLabel(){
+  return exportDir || "下载文件夹";
+}
+
+async function pickDir(){
+  const r = await post("export:pickDir");
+  if (r.canceled) return;                 // 用户点了取消，不是错误
+  if (!r.ok) return banner("用不了这个目录：" + r.error);
+  exportDir = r.dir;
+  updateTarget();
+}
+
+/** 写盘。目录由主进程定（用户选的那个，或者默认的下载文件夹），
+    文件名的合法性那边还会再挡一遍 —— 界面这一层挡的是手滑，挡不住被改过的页面。 */
+async function writeFiles(list){
+  // BOM 在这一层统一加 —— 构建函数产出的字符串本身不带。
+  // chat-extractor.html 里那份导出也是在这个位置加的，两边保持一致。
+  const r = await post("export:write", {
+    files: list.map((f) => ({ name: f.name, text: YRP.withBom(f.text) }))
+  });
+  if (!r.ok) throw new Error(r.error);
+  exportDir = r.dir;
+  updateTarget();
+  return r.dir;
+}
+
+/** 勾选的那些取回解析结果，交成一个数组。 */
+async function collect(){
+  const keys = [...S.picked];
+  return YRP.gatherSources(keys, {
+    read: async (k) => {
+      const mine = S.local.get(k);
+      if (mine) return mine.result;
+      const r = await post("recording:parse", { name: keyName(k) });
+      return YRP.normalizeServer(r);
+    }
+  });
+}
+
+/** 导出的统一前后壳：拦重复点击、禁用工具栏、出错兜底。 */
+async function runExport(fn){
+  if (S.exporting) return;
+  if (!S.picked.size) return banner("先在上面勾要导出的录像，或者拖一个 .yrp3d 进来。");
+  if (!YRP) return banner("导出功能用不了：" + (await parserReady));
+  banner("");
+  S.exporting = true;
+  updateSelBar();
+  try {
+    await fn(await collect());
+  } catch (err){
+    banner("导出失败：" + err.message);
+  } finally {
+    S.exporting = false;
+    updateSelBar();
+  }
+}
+
+async function exportOne(base, text, mime, all){
+  const name = YRP.withStamp(base, YRP.stamp());
+  await writeFiles([{ name, text, mime }]);
+  showToast(1, [{ name, text, mime }], all);
+}
+
+let toastTimer = null;
+
+function dismissToast(){
+  clearTimeout(toastTimer);
+  $("toast").classList.remove("show");
+}
+
+/* toast 整个用 el() 造 —— 文件名和对话内容都是**别人能左右的东西**
+   （录像来自第三方服务器），进 innerHTML 就是往界面里放注入点。 */
+function showToast(count, files, all){
+  const box = $("toast");
+  dismissToast();
+  const kids = [];
+
+  const head = el("div", "t-head");
+  head.appendChild(el("span", "tick", "✓"));
+  head.appendChild(el("span", null, `已导出 ${count} 个文件`));
+  const close = el("button", "t-close", "✕");
+  close.title = "关闭";
+  close.onclick = dismissToast;
+  head.appendChild(close);
+  kids.push(head);
+
+  kids.push(el("div", "t-dest", "保存到：" + destLabel()));
+
+  const shown = files.slice(0, 12);
+  const list = el("div", "t-files");
+  for (const f of shown){
+    // 文件已经落在磁盘上了，所以这里只给个「打开看看」——
+    // 路径由主进程拼，这边只说文件名
+    const b = el("button", "t-open", f.name);
+    b.title = "用系统默认程序打开";
+    b.onclick = async () => {
+      const r = await post("shell:openFile", { name: f.name });
+      if (!r.ok) banner("打不开：" + r.error);
+    };
+    list.appendChild(b);
+    list.appendChild(el("br"));
+  }
+  kids.push(list);
+
+  if (files.length > shown.length)
+    kids.push(el("div", "t-more", `…另外 ${files.length - shown.length} 个没有列出来`));
+  kids.push(el("div", "t-hint", "点文件名可以用系统默认程序打开看一眼内容"));
+
+  // 正在录的那个只能导到「已经录到的部分」，说清楚免得以为丢内容了
+  const busy = (all || []).filter((r) => r.running || r.trimmed).length;
+  if (busy) kids.push(el("div", "t-more",
+    `其中 ${busy} 个还在录、或者尾部有半个包没写完，导出的是已经录到的部分`));
+
+  box.replaceChildren(...kids);
+  box.classList.add("show");
+  toastTimer = setTimeout(dismissToast, 20000);
+}
+
+/* ---------- 事件绑定 ---------- */
+document.querySelectorAll(".tab").forEach((t) => {
+  t.onclick = () => {
+    document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("on", x === t));
+    S.tab = t.dataset.tab;
+    $("tab-observer").classList.toggle("hidden", S.tab !== "observer");
+    $("tab-proxy").classList.toggle("hidden", S.tab !== "proxy");
+  };
+});
+
+$("o-start").onclick = () => start("observer");
+$("o-stop").onclick  = () => stop("observer");
+$("p-start").onclick = () => start("proxy");
+$("p-stop").onclick  = () => stop("proxy");
+
+$("q").oninput = (e) => { S.q = e.target.value; render(); };
+$("filt").onchange = (e) => { S.filt = e.target.value; render(); };
+
+/* ---------- 录像存到哪儿 ---------- */
+// 和 exportDir 那边同一个道理：**值由主进程说了算**（它会去写 settings.json），
+// 这边只是一个显示用的副本。真正往哪儿写、能不能写，都在 api.js 里判。
+let recDir = null;
+
+function updateRecTarget(){
+  const t = $("rec-target");
+  const d = recDir && recDir.dir;
+  if (!d){ t.textContent = "录像存到：…"; return; }
+  t.textContent =
+    "录像存到：" + d + (recDir.custom ? "" : "（默认）") +
+    (recDir.writable ? "" : "  ⚠️ 写不进去");
+  // 完整路径和说明都放 title：栏里那一格是截断显示的
+  t.title =
+    d +
+    (recDir.custom ? "" : "\n（默认位置，点「更改…」可以换）") +
+    (recDir.writable ? "" : "\n⚠️ 这个目录写不进去，录下来的东西存不下来。");
+  t.classList.toggle("bad", !recDir.writable);
+  $("rec-reset").classList.toggle("hidden", !recDir.custom);
+}
+
+async function refreshRecDir(){
+  const r = await post("replays:getDir");
+  if (!r.ok) return;
+  recDir = r;
+  updateRecTarget();
+}
+
+// 换完目录必须把列表也刷一遍 —— 否则界面上显示的还是旧目录里的那批文件，
+// 而子进程已经往新目录写了
+async function changeRecDir(ch){
+  const r = await post(ch);
+  if (r.canceled) return;                 // 用户点了取消，不是错误
+  if (!r.ok) return banner("换不了录像目录：" + r.error);
+  await refreshRecDir();
+  await refreshRecordings();
+}
+
+$("reveal").onclick = async () => {
+  const r = await post("shell:reveal");
+  // 窗口没提到前面不是错误，但得说一声 —— 否则就是「点了没反应」
+  if (r && r.ok && !r.raised) banner("文件夹已经打开了，但没能把它提到前面 —— 看一下任务栏。");
+};
+
+$("rec-dir").onclick = () => changeRecDir("replays:pickDir");
+$("rec-reset").onclick = () => changeRecDir("replays:resetDir");
+
+/* 拖放：窗口级一律 preventDefault —— 少了这句，往页面空白处拖一个非 .yrp3d
+   文件会被浏览器当成导航，整个界面状态（正在录的、已勾的）全丢 */
+window.addEventListener("dragenter", (e) => e.preventDefault());
+window.addEventListener("dragover", (e) => e.preventDefault());
+window.addEventListener("drop", (e) => {
+  e.preventDefault();
+  addLocalFiles(e.dataTransfer.files).catch((err) => banner("读不了拖进来的文件：" + err.message));
+});
+
+const drop = $("drop");
+drop.addEventListener("dragover", () => drop.classList.add("over"));
+drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+drop.addEventListener("drop", () => drop.classList.remove("over"));
+
+$("pick-files").onclick = () => $("file-input").click();
+$("pick-dir").onclick = () => $("dir-input").click();
+$("pick-clear-local").onclick = clearLocal;
+// 用完清空 value，不然同一个文件再选一次不会触发 change。
+// ⚠️ 清 value 必须在**把 FileList 拷成数组之后**。写成
+// `const fs = e.target.files; e.target.value = "";` 会让那个 FileList 一起被清空
+// （Chromium 138 真机实测：清完 fs.length 从 2 变 0），addLocalFiles 于是收到空列表，
+// 而它的横幅带着 `if (files.length)` 守卫，**连提示都不弹** —— 症状就是「选完文件完全没反应」。
+// 桌面版一直用拖放（走的是另一条 dataTransfer 分支）所以没暴露，手机上只能点击选文件，必然撞上。
+$("file-input").onchange = (e) => {
+  const fs = [...e.target.files];
+  e.target.value = "";
+  addLocalFiles(fs).catch((err) => banner("读不了选的文件：" + err.message));
+};
+$("dir-input").onchange = (e) => {
+  const fs = [...e.target.files];
+  e.target.value = "";
+  addLocalFiles(fs).catch((err) => banner("读不了选的文件夹：" + err.message));
+};
+
+/* 翻页只改 S.page，然后重画 —— 不加动画、不做局部更新，列表本来就只有一页的量。
+   页码的边界（首页/末页）由 updatePager 禁按钮，这里不用再判一次；
+   就算真被点到，pageMeta 也会夹回去。 */
+$("pg-prev").onclick = () => { S.page -= 1; renderRecs(); };
+$("pg-next").onclick = () => { S.page += 1; renderRecs(); };
+
+/* 全选/全不选是**跨页**的，这是故意的：它们是给批量导出用的，
+   勾完「全选」再翻几页检查一遍，不该把前面勾的清掉。
+   界面上有 #sel-count 一直在报总数（「已勾 68 个」），
+   所以不会让人误以为只勾了本页那 10 个。 */
+$("sel-all").onclick = () => {
+  for (const k of S.local.keys()) S.picked.add(k);
+  for (const f of S.srv) S.picked.add("s:" + f.name);
+  renderRecs();
+};
+$("sel-none").onclick = () => { S.picked.clear(); renderRecs(); };
+$("strip-sys").onchange = updateSelBar;
+$("strip-obs").onchange = updateSelBar;
+
+$("exp-txt").onclick = () => runExport(async (all) => {
+  const txt = YRP.buildMergedTxt(YRP.exportGroups(all, exportOpt()));
+  if (!txt) return banner("勾的这些录像里没有可导出的对话。");
+  await exportOne("录像对话汇总.txt", txt, "text/plain", all);
+});
+
+$("exp-each").onclick = () => runExport(async (all) => {
+  const groups = YRP.exportGroups(all, exportOpt());
+  if (!groups.length) return banner("勾的这些录像里没有可导出的对话。");
+  const s = YRP.stamp(), files = [];
+  for (const g of groups){
+    const name = YRP.withStamp(YRP.exportBaseName(g.file) + "_chat.txt", s);
+    files.push({ name, text: YRP.buildPerFileTxt(g), mime:"text/plain" });
+  }
+  // 一批一次写完：不再是「连着触发 N 次浏览器下载」，所以也不用再隔开
+  await writeFiles(files);
+  showToast(files.length, files, all);
+});
+
+$("exp-json").onclick = () => runExport(async (all) => {
+  // 空集合也是合法 JSON，所以这里不做「没东西可导」的拦截
+  await exportOne("录像对话.json", YRP.buildJson(all, exportOpt()), "application/json", all);
+});
+
+$("exp-csv").onclick = () => runExport(async (all) => {
+  const csv = YRP.buildCsv(all, exportOpt());
+  if (!csv) return banner("勾的这些录像里没有可导出的对话。");
+  await exportOne("录像对话.csv", csv, "text/csv", all);
+});
+
+$("exp-copy").onclick = () => runExport(async (all) => {
+  const txt = YRP.buildMergedTxt(YRP.exportGroups(all, exportOpt()));
+  if (!txt) return banner("勾的这些录像里没有可导出的对话。");
+  const r = await post("clipboard:write", { text: txt });
+  if (!r.ok) return banner("复制不了：" + (r.error || "系统剪贴板不给用") + "，改用「合并 TXT」吧。");
+  const b = $("exp-copy"), was = b.textContent;
+  b.textContent = "已复制 ✓";
+  b.disabled = true;
+  setTimeout(() => { b.textContent = was; updateSelBar(); }, 1400);
+});
+
+$("exp-dir").onclick = pickDir;
+
+/* 这里原来绑的是「退出界面」按钮（post("app:quit")）。按钮和绑定一起删了 ——
+ * **必须一起删**：只删 HTML 的话 $("quit") 返回 null，这一行的 .onclick = 会抛
+ * TypeError，而它和下面 init() 在同一个 <script> 里，整个界面会直接白屏。
+ *
+ * app:quit 这个通道本身留着（main.js 和 api.js 两边都还在，main.js 的
+ * win.on("close") 就在用它）。只是界面上不再有第二个入口 ——
+ * 关窗口是唯一的退出方式，确认框仍然由主进程的 confirmQuit 出。 */
+
+/* ---------- 启动 ---------- */
+(async function init(){
+  // window.yrp 是 preload 开出来的那个口子。直接双击这个 .html 打开的话它不存在，
+  // 后面每一条请求都会炸在半路上 —— 说清楚，别让人对着一个死页面猜
+  if (!window.yrp){
+    banner("这个页面要在 yrp-tools 桌面程序里打开 —— 单开这个网页文件用不了。");
+    return;
+  }
+
+  clearLog("observer");
+  clearLog("proxy");
+
+  /* 读配置失败**不能**中止启动。这里是 init() 的第一个 await，让它抛出去的话
+     下面 state:get / 日志回灌 / 订阅 / 录像列表 / 那个 2 秒轮询一个都不会执行 ——
+     而按钮绑定在 init() 外面（见上面那一段），标签页和按钮照常能点，
+     看上去就像「界面是好的，只是配置没填上」，非常难查（安卓上真踩过这个）。
+     录像是能干活的，一次配置读取失败不该把整个界面废掉。 */
+  let cfgErr = null;
+  try {
+    await loadConfig();
+  } catch (e) {
+    cfgErr = (e && e.message) || String(e);
+  }
+
+  updateTarget();
+  await refreshRecDir();
+
+  const st = await post("state:get");
+  if (!st.ok) return banner("界面起不来：" + st.error);
+
+  // 解析块有两份，哪一份挂了都还能录、能看日志，只是相关的功能用不了
+  const why = await parserReady;
+  // 配置读不出来排在最前：表单是空的，不填就什么也录不了，比另外两条都紧要
+  if (cfgErr) banner("配置没读出来（" + cfgErr + "）—— 表单里是空的，填一遍再点开始记录。");
+  else if (st.parserError) banner("对话查看器用不了：" + st.parserError);
+  else if (why) banner("上传和导出用不了：" + why);
+
+  // 日志先灌一遍再订阅：窗口 reload（Ctrl+R）之后面板不会是空的。
+  // 两件事分开做，中间那一瞬间产生的日志会漏掉 —— 漏几条比刷出重影好。
+  const back = await post("log:backlog");
+  if (back.ok) for (const ev of back.events) if (ev.t === "log") pushLog(ev);
+
+  setRunning("observer", st.running.observer);
+  setRunning("proxy", st.running.proxy);
+
+  connect();
+  await refreshRecordings();
+
+  // 录制中每 2 秒重新解析一遍最新的文件 —— 对话列表以磁盘上的 .yrp3d 为准，
+  // 不去从子进程的 stdout 里猜
+  setInterval(() => {
+    if (S.running.proxy || S.running.observer){
+      refreshRecordings();
+      if (S.sel) select(S.sel, true);
+    }
+  }, 2000);
+})();
+</script>
+</body>
+</html>

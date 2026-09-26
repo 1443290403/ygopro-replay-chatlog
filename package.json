@@ -1,0 +1,56 @@
+{
+  "name": "yrp-tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "从改版客户端（MDPro3 / YGOPro-Unity）的 .yrp3d 录像里导出对局聊天记录",
+  "main": "proxy/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node proxy/_test_api.mjs && node proxy/_test_paging.mjs && node proxy/_test_import.mjs && node _test_parser.mjs && node proxy/_test_proxy.mjs && node proxy/_test_observer.mjs && node proxy/_test_e2e.mjs",
+    "test:electron": "node _test_electron.mjs",
+    "dist": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "local.yrp.tools",
+    "productName": "yrp-tools",
+    "directories": {
+      "output": "release/electron",
+      "buildResources": "electron-resources"
+    },
+    "asar": false,
+    "files": [
+      "_shipped.js",
+      "_parser.js",
+      "chat-extractor.html",
+      "proxy/**/*",
+      "!proxy/config.json",
+      "!proxy/observer.json",
+      "!proxy/replays",
+      "!proxy/replays/**/*",
+      "!proxy/_test_*.mjs",
+      "!proxy/gui-console.bat",
+      "!**/*.md"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "artifactName": "yrp-tools-Setup.exe"
+    },
+    "electronFuses": {
+      "runAsNode": true
+    }
+  },
+  "devDependencies": {
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3"
+  }
+}
