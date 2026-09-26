@@ -68,7 +68,7 @@ const IMPORT_BODY_MAX = Math.ceil((IMPORT_MAX_TOTAL * 4) / 3) + 256 * 1024;
 const DEFAULTS = {
   proxy: { remoteHost: "mygo.superpre.pro", remotePort: 888, listenPort: 888, recordOwnChat: false },
   observer: {
-    host: "mygo2.superpre.pro",
+    host: "mygo.superpre.pro",
     port: 888,
     room: "",
     name: "观战记录",

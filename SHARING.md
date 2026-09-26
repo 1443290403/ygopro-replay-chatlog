@@ -5,6 +5,7 @@
 
 这份文件在三个分支的根目录下逐字节相同，在哪个分支读到的都是这一份。
 下面所有 sha256 都是 2026-09-26 实测的，不是记忆里的数字。
+（当晚把观战默认地址从 mygo2 改成 mygo 之后，又按文件重算过一遍。）
 
 ### 1. 三个分支：
 * `master`（默认分支）：`yrp.exe`（Node SEA 封装）+ 本地 HTTP 服务 + 浏览器页面
@@ -36,11 +37,11 @@
 |---|---|---|---|
 | `chat-extractor.html` | `7647a5aa4176fdca` | `7647a5aa4176fdca` | `7647a5aa4176fdca` |
 | `_parser.js` | `30bc83d4b28f4b7f` | `30bc83d4b28f4b7f` | `30bc83d4b28f4b7f` |
-| `proxy/gui.html` | `1c0f976accdcba3a` | `1c0f976accdcba3a` | `ec84bf90b5026453`（手工同步的近似副本） |
-| `proxy/api.js` | `42c631a98e7121dc` | `42c631a98e7121dc` | 没有这个文件（它的后端是 `proxy/gui.js`） |
-| `proxy/observer.js` | `d8a6fcad78411a0b` | `d8a6fcad78411a0b` | `e5ff7de9f7b58694`（另一套写法） |
+| `proxy/gui.html` | `344d1372c3213e0b` | `344d1372c3213e0b` | `960d3ecedf25bbb1`（手工同步的近似副本） |
+| `proxy/api.js` | `3c5f067c1e8fe1c2` | `3c5f067c1e8fe1c2` | 没有这个文件（它的后端是 `proxy/gui.js`） |
+| `proxy/observer.js` | `f4c63bf1078ed89d` | `f4c63bf1078ed89d` | `ff70465ee206da9a`（另一套写法） |
 | `proxy/proxy.js` | `b9fab395bd3c015b` | `b9fab395bd3c015b` | `761b330046b0d7e1`（另一套写法） |
-| `www/index.html` | 没有 | `e8ab42c5f6d503c5`（= `gui.html` + 一行垫片） | 没有 |
+| `www/index.html` | 没有 | `fcc14c316feb0205`（= `gui.html` + 一行垫片） | 没有 |
 
 自己量一遍，不要相信这张表：
 
