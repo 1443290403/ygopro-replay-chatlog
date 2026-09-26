@@ -175,6 +175,14 @@ log("1b. DEFAULTS 一致性");
     "界面和 observer.js 的观战默认值一致",
     `界面 ${JSON.stringify(DEFAULTS.observer)} / observer.js ${JSON.stringify(observer.DEFAULTS)}`
   );
+  /* 上面那条只比「三份是不是一样」，改了地址三份一起改它照绿。所以这里把
+     **字面值**也钉住：观战预填的就是 mygo.superpre.pro（2026-09-26 晚用户要求，
+     原来预填的是 mygo2.superpre.pro）。 */
+  ok(
+    DEFAULTS.observer.host === "mygo.superpre.pro" && observer.DEFAULTS.host === "mygo.superpre.pro",
+    "观战预填的地址是 mygo.superpre.pro",
+    `界面 ${DEFAULTS.observer.host} / observer.js ${observer.DEFAULTS.host}`
+  );
 }
 
 /* ================================================================== *

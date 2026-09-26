@@ -12,7 +12,7 @@
 两个输出的都是 `.yrp3d`。用窗口的话查看和导出都在里面；命令行版拖进 `../chat-extractor.html`。
 
 > **服务器地址已经填好了。** 代理模式预填 `mygo.superpre.pro:888`、观战模式预填
-> `mygo2.superpre.pro:888`，命令行版第一次问的时候括号里也是它，直接回车即可。
+> `mygo.superpre.pro:888`，命令行版第一次问的时候括号里也是它，直接回车即可。
 > 要连别的服务器就把它覆盖掉 —— 三个地方（`proxy.js` / `observer.js` / `api.js`）
 > 各有一份默认值，`_test_api.mjs` 会断言它们一致，改的时候别漏。
 
@@ -209,7 +209,7 @@ ygopro 客户端 ──► 127.0.0.1:<本机端口> ──► 第三方服务器
 或命令行 `node observer.js`。第一次运行问你四件事（同样，括号里是默认值）：
 
 ```
-第三方服务器地址（域名或 IP）（回车 = mygo2.superpre.pro）: mygo2.superpre.pro
+第三方服务器地址（域名或 IP）（回车 = mygo.superpre.pro）: mygo.superpre.pro
 第三方服务器端口（回车 = 888）: 888
 房间名（要和客户端里填的完全一致）: 朋友的房
 观战用的昵称（服务器要一个名字）: 观战记录
@@ -339,7 +339,7 @@ node proxy.js --dump
 
 ```json
 {
-  "host": "mygo2.superpre.pro",
+  "host": "mygo.superpre.pro",
   "port": 888,
   "room": "朋友的房",
   "name": "观战记录",
@@ -349,7 +349,7 @@ node proxy.js --dump
 
 | 字段 | 说明 |
 |---|---|
-| `host` / `port` | 第三方服务器地址和端口。默认 `mygo2.superpre.pro:888` |
+| `host` / `port` | 第三方服务器地址和端口。默认 `mygo.superpre.pro:888` |
 | `room` | 房间名。必须和房主那边看到的**完全一致**，带密码写成 `房间名$密码` |
 | `name` | 观战用的昵称。服务器要求非空；服务器开了 `display_watchers` 时房主那边会看到 |
 | `version` | 协议版本号。填错会自动纠正并改写这里 |
