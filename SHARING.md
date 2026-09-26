@@ -5,7 +5,7 @@
 
 这份文件在三个分支的根目录下逐字节相同，在哪个分支读到的都是这一份。
 下面所有 sha256 都是 2026-09-26 实测的，不是记忆里的数字。
-（当晚把观战默认地址从 mygo2 改成 mygo 之后，又按文件重算过一遍。）
+（当晚把观战默认地址从 mygo2 改成 mygo、以及给导出的 TXT 每条之间加空行之后，都按文件重算过一遍。）
 
 ### 1. 三个分支：
 * `master`（默认分支）：`yrp.exe`（Node SEA 封装）+ 本地 HTTP 服务 + 浏览器页面
@@ -35,7 +35,7 @@
 
 | 文件 | electron | android（`www/` 里那份） | master |
 |---|---|---|---|
-| `chat-extractor.html` | `7647a5aa4176fdca` | `7647a5aa4176fdca` | `7647a5aa4176fdca` |
+| `chat-extractor.html` | `ecfba838e828a6b6` | `ecfba838e828a6b6` | `ecfba838e828a6b6` |
 | `_parser.js` | `30bc83d4b28f4b7f` | `30bc83d4b28f4b7f` | `30bc83d4b28f4b7f` |
 | `proxy/gui.html` | `344d1372c3213e0b` | `344d1372c3213e0b` | `960d3ecedf25bbb1`（手工同步的近似副本） |
 | `proxy/api.js` | `3c5f067c1e8fe1c2` | `3c5f067c1e8fe1c2` | 没有这个文件（它的后端是 `proxy/gui.js`） |
