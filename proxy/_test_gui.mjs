@@ -488,9 +488,9 @@ try {
       "exportGroups 保留了有对话的文件");
     const txt = buildMergedTxt(groups);
     ok(txt === "### " + chopped + "\n" +
-        r.body.chats.map((c) => `${c.who}: ${c.msg}`).join("\n"),
+        r.body.chats.map((c) => `${c.who}: ${c.msg}`).join("\n\n"),
       "合并 TXT 的 ### 头行和说话者前缀都对", JSON.stringify(txt));
-    ok(buildPerFileTxt(groups[0]) === r.body.chats.map((c) => `${c.who}: ${c.msg}`).join("\n"),
+    ok(buildPerFileTxt(groups[0]) === r.body.chats.map((c) => `${c.who}: ${c.msg}`).join("\n\n"),
       "分文件 TXT = 合并 TXT 去掉头行");
 
     // 上传的文件根本没进服务端，所以「服务器上的录像」和「本机文件」在构建函数

@@ -159,15 +159,15 @@ exp(mod.buildCsv([], {}), "", "CSV 空输入返回空串");
 exp(mod.buildCsv([{ok:false, file:"c.yrp3d"}], {}), "", "CSV 跳过解析失败的文件");
 
 exp(mod.buildMergedTxt(mod.exportGroups(FIX, {})),
-  "### a.yrp3d\nA: 你好\nLIGHTBLUE: Tip: 开始\n观战者: 围观",
-  "合并 TXT 逐字节（文件标题 + 每行 who: msg）");
+  "### a.yrp3d\nA: 你好\n\nLIGHTBLUE: Tip: 开始\n\n观战者: 围观",
+  "合并 TXT 逐字节（文件标题 + 每条之间空一行）");
 exp(mod.buildMergedTxt([{file:"a", chats:[{who:"A", msg:"1"}]},
                         {file:"b", chats:[{who:"B", msg:"2"}]}]),
   "### a\nA: 1\n\n### b\nB: 2", "合并 TXT 两份之间空一行");
 exp(mod.buildMergedTxt([]), "", "合并 TXT 空输入返回空串");
 
 exp(mod.buildPerFileTxt({file:"a", chats:[{who:"A", msg:"1"}, {who:"B", msg:"2"}]}),
-  "A: 1\nB: 2", "分文件 TXT 逐字节");
+  "A: 1\n\nB: 2", "分文件 TXT 逐字节（每条之间空一行）");
 exp(mod.buildPerFileTxt({file:"a", chats:[]}), "", "分文件 TXT 无对话返回空串");
 
 exp(JSON.stringify(mod.exportGroups([{ok:true, file:"a", chats:[]}], {})), "[]",
