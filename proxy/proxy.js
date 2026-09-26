@@ -392,7 +392,7 @@ let cfg = null;
 // 这份默认值同时是**首次运行的预填值**（下面的 ask() 都拿它当 fallback）和
 // 配置缺字段时的兜底。改这里必须同步改 observer.js 和 gui.js 里那两份 ——
 // gui.js 那边的注释写了原因。
-const DEFAULT_HOST = "example.com";
+const DEFAULT_HOST = "mygo.superpre.pro";
 const DEFAULT_PORT = 888;
 const DEFAULTS = {
   remoteHost: DEFAULT_HOST,
