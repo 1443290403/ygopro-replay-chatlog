@@ -146,6 +146,11 @@ ok(typeof api.handlers["parser:get"]().source === "string", "parser:get 能发�
   const r = api.handlers["config:get"]();
   eq(r.ok, true, "config:get 成功");
   eq(r.proxy.remoteHost, "mygo.superpre.pro", "代理侧预填了默认服务器（和 api.js 的 DEFAULTS 一致）");
+  /* 观战这边上面已经往 TMP 里写过一份 observer.json（哨兵房间那份），所以这里
+     读到的是**文件里的**地址而不是默认值 —— 这正好把「配置文件盖过默认值」钉住。
+     用户那边「换了 APK 还是 example.com」就是这个机制：旧包把 example.com 存进了
+     应用私有目录的 observer.json，之后装什么包都盖不过它，得清一次数据。 */
+  eq(r.observer.host, "127.0.0.1", "观战侧读的是配置文件里的地址（有配置时盖过默认值）");
 }
 
 /* ------------------------------------------------------------------ *

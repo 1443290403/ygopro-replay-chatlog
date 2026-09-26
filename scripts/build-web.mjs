@@ -150,7 +150,7 @@ for (const bad of NEVER_COPY) {
 /* 拿用户**真实配置里的值**当泄漏标志 —— 比硬编码字符串准。
  *
  * 扫的是 room / name / hostPort，**不含服务器地址**：地址是作者自己写进默认值的
- * （proxy 用 mygo.superpre.pro、观战用 mygo2.superpre.pro），公开的，不当秘密；
+ * （代理和观战都是 mygo.superpre.pro），公开的，不当秘密；
  * 房间名和昵称才是真正私密的。
  *
  * ⚠️ 所以改那两个默认地址**不会**让这一段变红 —— 别以为它守住了地址。
