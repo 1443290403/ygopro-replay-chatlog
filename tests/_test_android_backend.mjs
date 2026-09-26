@@ -145,7 +145,7 @@ ok(typeof api.handlers["parser:get"]().source === "string", "parser:get 能发�
 {
   const r = api.handlers["config:get"]();
   eq(r.ok, true, "config:get 成功");
-  eq(r.proxy.remoteHost, "example.com", "代理侧预填了默认服务器（和 demo 一致）");
+  eq(r.proxy.remoteHost, "mygo.superpre.pro", "代理侧预填了默认服务器（和 api.js 的 DEFAULTS 一致）");
 }
 
 /* ------------------------------------------------------------------ *

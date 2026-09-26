@@ -1,5 +1,26 @@
 apply plugin: 'com.android.application'
 
+// ---------------------------------------------------------------------------
+// 签名（可选）。
+//
+// `android/keystore.properties` **存在时才启用**。那个文件和 keystore 本体都不在
+// 版本库里（keystore 放在 %USERPROFILE%\.android-keys\，properties 被 .gitignore
+// 排除），所以公开仓库 clone 下来跑 assembleRelease 得到的仍是未签名的 APK，
+// 和加这段之前完全一样 —— 这段对别人是无操作。
+//
+// 为什么要有它：debug 签名的包换台机器重新构建就装不上去（签名不同），
+// 而 release 变体 AGP 会 strip 原生符号 —— 这个 APK 里 147 MB 是 .so，
+// 值得换一个固定的签名。
+//
+// ⚠️ properties 里的路径用正斜杠：properties 文件里反斜杠是转义符。
+// ---------------------------------------------------------------------------
+def keystorePropsFile = rootProject.file("keystore.properties")
+def hasKeystore = keystorePropsFile.exists()
+def keystoreProps = new Properties()
+if (hasKeystore) {
+    keystorePropsFile.withInputStream { keystoreProps.load(it) }
+}
+
 android {
     namespace = "local.yrp.tools"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,10 +37,23 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (hasKeystore) {
+            release {
+                storeFile file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (hasKeystore) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }

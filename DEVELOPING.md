@@ -214,14 +214,16 @@ files/
 
 ### ⚠️ 卸载 App 会连录像一起删掉
 
-录像在 App 私有目录里，**卸载即全丢**，而且 debug 签名的 APK 换台机器重新构建后会因为签名不同
-而必须卸载重装。所以：**想留的对话，导出成 TXT 分享出去再说。**
+录像在 App 私有目录里，**卸载即全丢**。而签名一换（换台机器重新构建 debug 包、或从 debug
+换成 release）就必须先卸载才能装新的，于是录像跟着没。所以：**想留的对话，导出成 TXT
+分享出去再说。** —— 想避开这条就给 release 包固定一份签名（见 §5 末尾）。
 
 ---
 
 ## 5. 装上手机
 
-APK 是 **debug 签名**的（个人自用、侧载，不需要 keystore 也不需要上架）。
+`npm run apk` 出的是 **debug 签名**的 APK（侧载够用，不需要上架）。
+仓库里**不带任何签名材料**，想要一个固定签名的 release 包见本节末尾。
 
 ```bash
 # 手机开 USB 调试后
@@ -242,6 +244,44 @@ App 名叫 **yrp-tools**，包名 `local.yrp.tools`。
 > # 或者直接比时间：装包时间必须晚于你改完代码的时间
 > adb shell dumpsys package local.yrp.tools | grep lastUpdateTime
 > ```
+
+### 可选：给 release 包固定一份签名
+
+debug 包的签名是构建机上自动生成的，换台机器就变。要一个签名稳定的包就自己签一个：
+
+```bash
+keytool -genkeypair -v -keystore ~/.android-keys/yrp-tools.jks -storetype PKCS12 \
+  -alias yrp-tools -keyalg RSA -keysize 2048 -validity 10000
+```
+
+keystore 放**项目树外面**（上面是 `~/.android-keys/`），再写
+`android/keystore.properties`：
+
+```properties
+storeFile=C:/Users/you/.android-keys/yrp-tools.jks
+storePassword=改成你的
+keyAlias=yrp-tools
+keyPassword=改成你的
+```
+
+`android/app/build.gradle` 只是**读得到这个文件就启用 release 签名，读不到就照旧**，
+所以它不在仓库里、也不用改构建脚本。然后：
+
+```bash
+cd android && ./gradlew assembleRelease
+# 产物 android/app/build/outputs/apk/release/app-release.apk
+```
+
+`android/.gitignore` 排掉了 `*.jks` / `*.keystore` / `*.p12` / `keystore.properties`。
+**`keystore.properties` 里是明文密码，不要提交、不要外发。** 它和 keystore 一起备份好
+—— 丢了就再也签不出同一个签名的包，只能卸载重装，而卸载会删掉录像（见 §4）。
+
+> 从 debug 换到 release 也属于换签名，**装之前必须先卸载**，录像会被删掉，先导出。
+
+> 体积上别抱期待：release 相对 debug 只小 1 MB 左右（152.1 → 150.7 MB）。
+> 那 147 MB 是三个 ABI 各一份 `libnode.so`，而且它们来自预编译的 AAR，
+> AGP 的 `stripDebugSymbols` 不会碰。真要瘦就砍 ABI
+> （`abiFilters "arm64-v8a"` → 约 55 MB），代价是 x86_64 模拟器装不上。
 
 ---
 
@@ -283,7 +323,8 @@ npm test
 - **不做 iOS**，插件的 iOS 侧要在 macOS 上构建
 - **电池白名单要手动加**（见 §3）—— 没写成 App 内的一键按钮，因为那需要自己写一个原生插件，
   是个离线测不了的构建面；FGS + WAKE_LOCK 已经覆盖了主要的被杀路径
-- **debug 签名**，换机器重新构建会因为签名不同而必须卸载重装（录像会丢，见 §4）
+- **签名默认是 debug**。仓库里不放 keystore，所以 clone 下来直接能构建；代价是换机器重新
+  构建会因为签名不同而必须卸载重装（录像会丢，见 §4）。配一份自己的签名即可避免（见 §5）
 
 ### 踩过的坑（改这块之前先看）
 

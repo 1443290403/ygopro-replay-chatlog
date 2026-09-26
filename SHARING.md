@@ -36,11 +36,11 @@
 |---|---|---|---|
 | `chat-extractor.html` | `7647a5aa4176fdca` | `7647a5aa4176fdca` | `7647a5aa4176fdca` |
 | `_parser.js` | `30bc83d4b28f4b7f` | `30bc83d4b28f4b7f` | `30bc83d4b28f4b7f` |
-| `proxy/gui.html` | `8e35dcce1ddd932f` | `8e35dcce1ddd932f` | `a2d534a36b368a2a`（手工同步的近似副本） |
-| `proxy/api.js` | `42016bb903a18810` | `42016bb903a18810` | 没有这个文件（它的后端是 `proxy/gui.js`） |
-| `proxy/observer.js` | `e5e3b34abef8d4ea` | `e5e3b34abef8d4ea` | `41ad7a2cd479d5dd`（另一套写法） |
-| `proxy/proxy.js` | `3ec80d7b0f033adb` | `3ec80d7b0f033adb` | `a105b6b9ef2b3922`（另一套写法） |
-| `www/index.html` | 没有 | `f774573bc4bf7520`（= `gui.html` + 一行垫片） | 没有 |
+| `proxy/gui.html` | `1c0f976accdcba3a` | `1c0f976accdcba3a` | `ec84bf90b5026453`（手工同步的近似副本） |
+| `proxy/api.js` | `42c631a98e7121dc` | `42c631a98e7121dc` | 没有这个文件（它的后端是 `proxy/gui.js`） |
+| `proxy/observer.js` | `d8a6fcad78411a0b` | `d8a6fcad78411a0b` | `e5ff7de9f7b58694`（另一套写法） |
+| `proxy/proxy.js` | `b9fab395bd3c015b` | `b9fab395bd3c015b` | `761b330046b0d7e1`（另一套写法） |
+| `www/index.html` | 没有 | `e8ab42c5f6d503c5`（= `gui.html` + 一行垫片） | 没有 |
 
 自己量一遍，不要相信这张表：
 
@@ -188,6 +188,7 @@ cd yrp-tools-android && npm run sync     # 首次必须跑；以后改了 electr
 | `@parser` 哨兵块 / `_parser.js` | 三处都要（`_parser.js` 是各自仓库里的一份，哨兵块共享） | 三个分支的 `_test_parser.mjs` | 三个都要重出 |
 | electron 的 `proxy/gui.html`（界面） | `npm run sync`（安卓）+ 手工同步 `master` | electron `npm test`、安卓 `npm test`、`master` 的 `_test_gui.mjs` | 三个都要重出 |
 | electron 的 `proxy/api.js`（后端） | `npm run sync` | electron `npm test`、安卓 `npm test` | 桌面 + 安卓 |
+| 默认服务器地址（`proxy.js` / `observer.js` / `api.js` 的 `DEFAULTS`） | 不用 | electron `npm test`、安卓 `npm test` | 三个都要重出 —— 地址是**预填进界面和产物**的，不改磁盘上那份就等于没改 |
 | 安卓独有（`www/yrp-shim.js`、`index.js`、原生侧） | 不用 | 安卓 `npm test` | 安卓 |
 | `master` 独有的 `proxy/gui.js` | 不用 | `master` 的 `_test_gui.mjs` | `master` |
 

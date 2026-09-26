@@ -147,9 +147,14 @@ for (const bad of NEVER_COPY) {
   ok(hit.length === 0, `不该有 ${bad}`, hit.map(show).join(", "));
 }
 
-/* 拿用户**真实配置里的值**当泄漏标志 —— 比硬编码字符串准：
- * 服务器地址在代码里只是个占位默认值（example.com），拿它当标志没意义；
- * 房间名和昵称才是真正私密的。 */
+/* 拿用户**真实配置里的值**当泄漏标志 —— 比硬编码字符串准。
+ *
+ * 扫的是 room / name / hostPort，**不含服务器地址**：地址是作者自己写进默认值的
+ * （proxy 用 mygo.superpre.pro、观战用 mygo2.superpre.pro），公开的，不当秘密；
+ * 房间名和昵称才是真正私密的。
+ *
+ * ⚠️ 所以改那两个默认地址**不会**让这一段变红 —— 别以为它守住了地址。
+ *    `hostPort` 这个键现在的 observer.json 里并不存在，等于只有 room / name 在起作用。 */
 console.log("\n   用真实配置里的私密值再扫一遍：");
 for (const f of ["observer.json", "config.json"]) {
   const p = path.join(SRC, "proxy", f);

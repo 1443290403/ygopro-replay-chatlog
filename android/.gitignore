@@ -53,9 +53,12 @@ captures/
 .idea/navEditor.xml
 
 # Keystore files
-# Uncomment the following lines if you do not want to check your keystore files in.
-#*.jks
-#*.keystore
+# 本项目要发 release 包，签名材料一律不入库（keystore 本体其实放在项目树外面，
+# 这几条是兜底）。keystore.properties 里有明文密码，尤其不能进。
+*.jks
+*.keystore
+*.p12
+keystore.properties
 
 # External native build folder generated in Android Studio 2.2 and later
 .externalNativeBuild
